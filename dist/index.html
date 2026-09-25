@@ -35,6 +35,22 @@
         <div class="sync-meta" id="syncMeta">Sleeper not connected</div><div class="autosave">Saved automatically on this device</div>
       </aside>
     </section>
+    <section class="awards-panel" aria-labelledby="awards-title">
+      <div class="trend-head"><div><h2 id="awards-title">League awards</h2><p>The superlatives your group chat deserves.</p></div><div class="trend-note">Recalculated after every completed week</div></div>
+      <div class="awards-strip" id="awardsStrip"></div>
+    </section>
+    <section class="trend-panel" aria-labelledby="wins-plot-title">
+      <div class="trend-head"><div><h2 id="wins-plot-title">Wins vs. expectation</h2><p>Actual results compared with how often each team’s scores should have won.</p></div><div class="plot-key" aria-label="Plot legend"><span class="plot-dot lucky"></span>Fortunate <span class="plot-dot unlucky"></span>Unfortunate</div></div>
+      <div class="chart-scroll" id="winsPlot"></div>
+    </section>
+    <section class="trend-panel" aria-labelledby="heatmap-title">
+      <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week.</p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Cold</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>Hot</span></div></div>
+      <div class="data-scroll" id="scoringHeatmap"></div>
+    </section>
+    <section class="trend-panel" aria-labelledby="schedule-title">
+      <div class="trend-head"><div><h2 id="schedule-title">Schedule swap matrix</h2><p>How every team would fare playing each rival’s opponents.</p></div><div class="trend-note">Rows score · columns lend the schedule</div></div>
+      <div class="data-scroll" id="scheduleMatrix"></div>
+    </section>
     <section class="trend-panel" aria-labelledby="trend-title">
       <div class="trend-head"><div><h2 id="trend-title">Weekly power movement</h2><p>Rankings recalculated after every completed week.</p></div><div class="trend-note">Tap a team to isolate its path</div></div>
       <div class="chart-scroll" id="trendChart"></div><div class="chart-legend" id="trendLegend"></div>
