@@ -2,6 +2,10 @@ const DEFAULT_SLEEPER_LEAGUE_ID='1389375528988852224';
 const AUTO_SYNC_DAYS=new Set([0,1,4]),AUTO_SYNC_MAX_AGE_MS=60*60*1000;
 let teams=load(); let selected=teams[0]?.id; let sleeperConnection=loadSleeper(); let chartFocus=null; let isSyncing=false;
 const $=s=>document.querySelector(s), rankList=$('#rankList'), editor=$('#editor');
+const themeToggle=$('#themeToggle');
+function setTheme(theme,{persist=true}={}){const dark=theme==='dark';document.documentElement.dataset.theme=dark?'dark':'light';themeToggle.setAttribute('aria-pressed',String(dark));themeToggle.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');themeToggle.title=dark?'Switch to light mode':'Switch to dark mode';if(persist){try{localStorage.setItem('power-board-theme',dark?'dark':'light')}catch{}}}
+setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light',{persist:false});
+themeToggle.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
 function load(){try{const saved=JSON.parse(localStorage.getItem('power-board-teams'));return Array.isArray(saved)&&saved.every(team=>team?.sleeperRosterId!=null)?saved:[]}catch{return []}}
 function loadSleeper(){try{return JSON.parse(localStorage.getItem('power-board-sleeper'))||null}catch{return null}}
 function save(){localStorage.setItem('power-board-teams',JSON.stringify(teams))}

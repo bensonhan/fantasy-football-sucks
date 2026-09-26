@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="The Bubble Bruins fantasy football league power rankings, built from expected wins, scoring strength, recent form, luck, and playoff odds." />
   <title>Bubble Bruins — League Power Rankings</title>
+  <script>try{if(localStorage.getItem('power-board-theme')==='dark')document.documentElement.dataset.theme='dark'}catch{}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +16,13 @@
   <main class="shell">
     <header class="topbar">
       <div class="brand"><div class="brand-ball" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16 19 8M8 8l8 8M9.5 10.5l3-1.8M11.5 13.5l3-1.8M13.5 16.5l3-1.8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="brand-name">Bubble <span>Bruins</span></div></div>
-      <div class="week-chip" id="weekChip">Commissioner's desk · Week 8</div>
+      <div class="topbar-tools">
+        <div class="week-chip" id="weekChip">Commissioner's desk · Week 8</div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+          <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg></span>
+          <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg></span>
+        </button>
+      </div>
     </header>
     <section class="hero">
       <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>Bubble Bruins.</h1><p>Rankings, weekly movement, and the numbers behind every matchup—<strong>all in one place.</strong></p></div>
