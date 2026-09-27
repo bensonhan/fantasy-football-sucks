@@ -7,6 +7,8 @@ const Regret = (() => {
     IDP_FLEX: ['DL', 'LB', 'DB', 'DE', 'DT', 'CB', 'S'], DL: ['DL', 'DE', 'DT'], DB: ['DB', 'CB', 'S']
   };
   const decimals = value => Math.round((value + Number.EPSILON) * 100) / 100;
+  const transactionTime = tx => Number(tx.status_updated || tx.created || 0);
+  const createdTime = tx => Number(tx.created || tx.status_updated || 0);
   const playerName = (id, players) => players?.[id]?.full_name || [players?.[id]?.first_name, players?.[id]?.last_name].filter(Boolean).join(' ') || id;
   function eligible(id, slot, players) {
     const positions = players?.[id]?.fantasy_positions || (id.length <= 3 && /^[A-Z]+$/.test(id) ? ['DEF'] : []);
@@ -74,7 +76,7 @@ const Regret = (() => {
   }
   function analyze({transactions, weeks, statsByWeek, players, league, currentWeek}) {
     const completed = transactions.filter(tx => tx?.status === 'complete' && ['trade', 'waiver', 'free_agent'].includes(tx.type))
-      .sort((a, b) => Number(a.status_updated || a.created) - Number(b.status_updated || b.created));
+      .sort((a, b) => transactionTime(a) - transactionTime(b) || createdTime(a) - createdTime(b));
     const outcomes = new Map(), slots = league.roster_positions || [];
     for (let index = 0; index < completed.length; index++) {
       const tx = completed[index];
@@ -118,14 +120,14 @@ const Regret = (() => {
         const scored = rows.filter(row => !row.incomplete);
         const result = {id: `${tx.transaction_id}-${rosterId}`, rosterId, type: tx.type, title: movement.title,
           received: movement.received, sent: movement.sent, receivedNames: movement.receivedNames, sentNames: movement.sentNames, picks, faab: faabItems,
-          week: Number(tx.leg || 1), rows, impact: decimals(scored.reduce((sum, row) => sum + row.impact, 0)),
+          week: Number(tx.leg || 1), timestamp: transactionTime(tx), createdAt: createdTime(tx), rows, impact: decimals(scored.reduce((sum, row) => sum + row.impact, 0)),
           winChange: scored.reduce((sum, row) => sum + row.winChange, 0), estimated: scored.some(row => row.estimated),
           incomplete: rows.some(row => row.incomplete), capped: Boolean(nextMove), unrated: !assets.size};
         if (!outcomes.has(rosterId)) outcomes.set(rosterId, []);
         outcomes.get(rosterId).push(result);
       }
     }
-    for (const moves of outcomes.values()) moves.sort((a, b) => b.week - a.week);
+    for (const moves of outcomes.values()) moves.sort((a, b) => b.timestamp - a.timestamp || b.createdAt - a.createdAt || b.week - a.week);
     return outcomes;
   }
   async function load(leagueId, league, weeks, currentWeek) {

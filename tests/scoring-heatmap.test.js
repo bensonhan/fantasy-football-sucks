@@ -19,3 +19,9 @@ test('heatmap grades rank, sorts weeks, and leaves missing weeks blank', () => {
 });
 
 test('heatmap has an empty state', () => assert.match(Heatmap.markup([]), /Sync a Sleeper league/));
+
+test('heatmap grows with its weeks so a full season can scroll horizontally', () => {
+  const weeklyScores = Array.from({length:14}, (_, index) => ({week:index + 1, score:100 + index, rank:1}));
+  const html = Heatmap.markup([{name:'A', analytics:{powerScore:90, weeklyScores}}]);
+  assert.match(html, /class="data-table heatmap-table" style="width:1168px"/);
+});

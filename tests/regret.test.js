@@ -76,6 +76,16 @@ test('same-week drop does not erase a pickup visible in the Week 1 lineup', () =
   assert.equal(move.impact, 7);
 });
 
+test('moves are ordered newest first within the same week', () => {
+  const transactions = [
+    {status: 'complete', type: 'free_agent', transaction_id: 'add-k', leg: 1, roster_ids: [1], adds: {K: 1}, drops: null, status_updated: 1, created: 1},
+    {status: 'complete', type: 'free_agent', transaction_id: 'drop-k', leg: 1, roster_ids: [1], adds: null, drops: {K: 1}, status_updated: 2, created: 2}
+  ];
+  const moves = Regret.analyze({transactions, weeks: [], statsByWeek: {}, players,
+    league: {roster_positions: ['QB', 'RB', 'K']}, currentWeek: 2}).get(1);
+  assert.deepEqual(moves.map(move => move.title), ['Dropped Jake Bates', 'Added Jake Bates']);
+});
+
 test('a pick-only trade appears without a fabricated points grade', () => {
   const transactions = [{status: 'complete', type: 'trade', transaction_id: 'pick-1', leg: 1,
     roster_ids: [1, 2], adds: null, drops: null, draft_picks: [{season: '2027', round: 2, previous_owner_id: 1, owner_id: 2}], status_updated: 1}];

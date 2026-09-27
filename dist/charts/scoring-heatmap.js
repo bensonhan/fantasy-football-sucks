@@ -14,6 +14,7 @@ const ScoringHeatmapChart = (() => {
     const data = model(teams);
     if (!data) return '<div class="chart-empty">Sync a Sleeper league to build the scoring heatmap.</div>';
     const {rows, weeks, teamCount} = data;
+    const tableWidth = 160 + weeks.length * 72;
     const body = rows.map(team => {
       const byWeek = new Map(team.analytics.weeklyScores.map(week => [week.week, week]));
       return `<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${weeks.map(week => {
@@ -22,7 +23,7 @@ const ScoringHeatmapChart = (() => {
         return `<td class="heat-cell heat-${bucket(value.rank, teamCount)}" title="${esc(team.name)} scored ${value.score.toFixed(1)} in Week ${week}, ranking #${value.rank}" aria-label="${esc(team.name)}, Week ${week}: ${value.score.toFixed(1)} points, rank ${value.rank}"><span>${value.score.toFixed(1)}</span><small>#${value.rank}</small></td>`;
       }).join('')}</tr>`;
     }).join('');
-    return `<table class="data-table heatmap-table"><thead><tr><th scope="col">Team</th>${weeks.map(week => `<th scope="col">W${week}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+    return `<table class="data-table heatmap-table" style="width:${tableWidth}px"><thead><tr><th scope="col">Team</th>${weeks.map(week => `<th scope="col">W${week}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
   }
   function render(holder, teams) { holder.innerHTML = markup(teams); }
   return {bucket, model, markup, render};

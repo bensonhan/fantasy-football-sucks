@@ -9,15 +9,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23090d12'/%3E%3Cpath d='M17 40c7 8 23 8 30 0 5-6 4-15-1-20-7-7-21-7-28 0-6 5-6 14-1 20Z' fill='%23f36523' transform='rotate(-28 32 32)'/%3E%3Cpath d='m26 24 12 16M28 28l8-5M31 33l8-5M34 38l8-5' stroke='%23fff4df' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="assets/football-icon-v2.png">
+  <link rel="stylesheet" href="styles.css?v=mobile-heatmap">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-ball" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16 19 8M8 8l8 8M9.5 10.5l3-1.8M11.5 13.5l3-1.8M13.5 16.5l3-1.8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="brand-name">Fantasy Football <span>Sucks</span></div></div>
+      <div class="brand"><img class="brand-ball" src="assets/football-icon-v2.png" alt=""><div class="brand-name">Fantasy Football <span>Sucks</span></div></div>
       <div class="topbar-tools">
-        <div class="week-chip" id="weekChip">Commissioner's desk · Week 8</div>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
           <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg></span>
           <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg></span>
@@ -25,8 +24,7 @@
       </div>
     </header>
     <section class="hero">
-      <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>The<br>Breakdown.</h1><p>Rankings, weekly movement, and the numbers behind every matchup—<strong>all in one place.</strong></p></div>
-      <div class="ticker"><b>League snapshot</b><span id="tickerText">4 teams ranked · scores update instantly</span></div>
+      <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>Benson’s<br>Stats Sheet.</h1><p>The stats you need to prove your team is better—<strong>and everyone else just got lucky.</strong></p></div>
     </section>
     <section class="workspace">
       <section class="board" aria-labelledby="board-title">
@@ -46,13 +44,13 @@
       <div class="trend-head"><div><h2 id="awards-title">League awards</h2><p>The superlatives your group chat deserves.</p></div><div class="trend-note">Recalculated after every completed week</div></div>
       <div class="awards-strip" id="awardsStrip"></div>
     </section>
+    <section class="trend-panel" aria-labelledby="heatmap-title">
+      <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week. <span class="heatmap-swipe-hint">Swipe to see all weeks →</span></p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Cold</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>Hot</span></div></div>
+      <div class="data-scroll heatmap-scroll" id="scoringHeatmap" role="region" aria-label="Weekly scoring heatmap. Scroll horizontally to see all weeks." tabindex="0"></div>
+    </section>
     <section class="trend-panel" aria-labelledby="schedule-title">
       <div class="trend-head"><div><h2 id="schedule-title">Schedule swap matrix</h2><p>How every team would fare playing each rival’s opponents.</p></div><div class="trend-note">Rows score · columns lend the schedule</div></div>
       <div class="data-scroll" id="scheduleMatrix"></div>
-    </section>
-    <section class="trend-panel" aria-labelledby="heatmap-title">
-      <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week.</p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Cold</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>Hot</span></div></div>
-      <div class="data-scroll" id="scoringHeatmap"></div>
     </section>
     <section class="trend-panel" aria-labelledby="profiles-title">
       <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league.</p></div><div class="trend-note">All teams · completed weeks</div></div>
