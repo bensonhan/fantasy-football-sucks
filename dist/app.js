@@ -1,6 +1,8 @@
-const DEFAULT_SLEEPER_LEAGUE_ID='1389375528988852224';
+const DEFAULT_SLEEPER_LEAGUE_ID='1389375528988852224',REGRET_CACHE_VERSION=4;
 const AUTO_SYNC_DAYS=new Set([0,1,4]),AUTO_SYNC_MAX_AGE_MS=60*60*1000;
-let teams=load(); let selected=teams[0]?.id; let sleeperConnection=loadSleeper(); let chartFocus=null; let isSyncing=false;
+let teams=load(); let selected=teams[0]?.id; let sleeperConnection=loadSleeper(); let isSyncing=false;
+let regretByRoster=loadRegret(),regretError='',regretLoaded=hasCachedRegret();
+let managerHistory=ManagerHistory.readCache(sleeperConnection?.leagueId);
 const $=s=>document.querySelector(s), rankList=$('#rankList'), editor=$('#editor');
 const themeToggle=$('#themeToggle');
 function setTheme(theme,{persist=true}={}){const dark=theme==='dark';document.documentElement.dataset.theme=dark?'dark':'light';themeToggle.setAttribute('aria-pressed',String(dark));themeToggle.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');themeToggle.title=dark?'Switch to light mode':'Switch to dark mode';if(persist){try{localStorage.setItem('power-board-theme',dark?'dark':'light')}catch{}}}
@@ -8,28 +10,34 @@ setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light',{persist
 themeToggle.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
 function load(){try{const saved=JSON.parse(localStorage.getItem('power-board-teams'));return Array.isArray(saved)&&saved.every(team=>team?.sleeperRosterId!=null)?saved:[]}catch{return []}}
 function loadSleeper(){try{return JSON.parse(localStorage.getItem('power-board-sleeper'))||null}catch{return null}}
+function loadRegret(){try{const saved=JSON.parse(localStorage.getItem('power-board-regret'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===REGRET_CACHE_VERSION?saved.rows||{}:{}}catch{return {}}}
+function hasCachedRegret(){try{const saved=JSON.parse(localStorage.getItem('power-board-regret'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===REGRET_CACHE_VERSION}catch{return false}}
 function save(){localStorage.setItem('power-board-teams',JSON.stringify(teams))}
-function score(t){return t.analytics?.powerScore||0}
-function sorted(){return [...teams].sort((a,b)=>score(b)-score(a))}
+function score(t){return ChartUtils.score(t)}
+function sorted(){return ChartUtils.sorted(teams)}
 function render(){
   const list=sorted();
   if(!list.length){
     rankList.innerHTML=`<div class="empty">${isSyncing?'Connecting to Sleeper…':'No league data yet. Use Sync league to connect.'}</div>`;
     editor.innerHTML='<div class="empty">League analysis will appear here.</div>';
     $('#selectedLabel').textContent='No team selected';
-    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();
+    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderRegret();renderManagerHistory();
     $('#tickerText').textContent=isSyncing?'Loading league data…':'Waiting for a Sleeper league';renderSyncMeta();save();return;
   }
   if(!teams.some(t=>t.id===selected))selected=list[0].id;
   rankList.innerHTML=list.map((t,i)=>{const rank=i+1,diff=t.prev-rank,move=diff>0?`▲ ${diff}`:diff<0?`▼ ${Math.abs(diff)}`:'—',record=`${t.wins}-${t.losses}${t.ties?`-${t.ties}`:''}`,a=t.analytics;const metrics=a?`<div class="metric"><span>Expected W ${infoIcon('expectedWins')}</span><b>${a.expectedWins.toFixed(2)}</b></div><div class="metric"><span>Avg rank ${infoIcon('avgRank')}</span><b>${a.avgWeeklyRank.toFixed(1)}</b></div><div class="metric"><span>Luck ${infoIcon('luck')}</span><b>${signed(a.luck)}</b></div>`:'';return `<article class="rank-row ${i===0?'top':''}" tabindex="0" data-id="${t.id}" aria-label="Rank ${rank}, ${esc(t.name)}, score ${score(t).toFixed(1)}"><div class="rank-num">${String(rank).padStart(2,'0')}</div><div class="team-cell"><div class="team-name">${esc(t.name)}</div><div class="owner">${esc(t.owner)} · ${record}</div></div><div class="metrics">${metrics}</div><div class="score"><strong>${score(t).toFixed(1)}</strong><span>Power score ${infoIcon('powerScore')}</span></div><div class="move ${diff>0?'up':diff<0?'down':'same'}">${move}</div></article>`}).join('');
   rankList.querySelectorAll('.rank-row').forEach(el=>{el.addEventListener('click',()=>{selected=el.dataset.id;renderEditor()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selected=el.dataset.id;renderEditor()}})});
-  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderTrendChart();
+  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderTrendChart();renderManagerHistory();
   $('#tickerText').textContent=sleeperConnection?`${teams.length} teams · ${sleeperConnection.leagueName} · ${sleeperConnection.completedWeeks} weeks analyzed`:'Waiting for a Sleeper league';renderSyncMeta();save();
 }
-function esc(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function renderEditor(){const t=teams.find(x=>x.id===selected);if(!t)return;const rank=sorted().findIndex(x=>x.id===t.id)+1;$('#selectedLabel').textContent=`Rank #${rank} · ${t.name}`;if(!t.analytics){editor.innerHTML='<div class="empty">Analyzing league data…</div>';return}const a=t.analytics,allPlay=`${fmtHalf(a.allPlayWins)}-${fmtHalf(a.allPlayLosses)}${a.allPlayTies?`-${fmtHalf(a.allPlayTies)}`:''}`,allPlayRank=Number.isFinite(a.allPlayRank)?`#${a.allPlayRank} of ${teams.length}`:'—';const card=(key,label,value,classes='')=>`<div class="stat-card ${classes}"><span>${label} ${infoIcon(key)}</span><strong>${value}</strong></div>`;editor.innerHTML=`<div class="stat-grid">${card('expectedWins','Expected wins',a.expectedWins.toFixed(2))}${card('luck','Schedule luck',signed(a.luck),a.luck>0.2?'good':a.luck<-.2?'bad':'')}${card('allPlay','All-play record',allPlay)}${card('avgRank','Avg weekly rank',`${a.avgWeeklyRank.toFixed(1)} of ${teams.length}`)}${card('recentForm','Recent form',`${signed(a.recentZ)} z`)}${card('consistency','Consistency',`${a.consistency.toFixed(1)} σ`)}${card('allPlayRank','All-play rank',allPlayRank)}${card('playoffOdds','Playoff odds',`${a.playoffOdds.toFixed(0)}%`)}${card('badBeats','Bad beats',a.badBeats)}${card('thiefWins','Thief wins',a.thiefWins)}${card('closestGame','Closest game',esc(a.closestGame),'wide')}${card('largestBlowout','Largest blowout',esc(a.largestBlowout),'wide')}</div><div class="report-note">Playoff odds use 3,000 history-based schedule simulations. They reflect past scoring, not injuries or player projections.</div>`}
+function esc(v){return ChartUtils.escapeHtml(v)}
+function renderEditor(){const t=teams.find(x=>x.id===selected);if(!t){renderRegret();return}const rank=sorted().findIndex(x=>x.id===t.id)+1;$('#selectedLabel').textContent=`Rank #${rank} · ${t.name}`;if(!t.analytics){editor.innerHTML='<div class="empty">Analyzing league data…</div>';renderRegret();return}const a=t.analytics,allPlay=`${fmtHalf(a.allPlayWins)}-${fmtHalf(a.allPlayLosses)}${a.allPlayTies?`-${fmtHalf(a.allPlayTies)}`:''}`,allPlayRank=Number.isFinite(a.allPlayRank)?`#${a.allPlayRank} of ${teams.length}`:'—';const card=(key,label,value,classes='')=>`<div class="stat-card ${classes}"><span>${label} ${infoIcon(key)}</span><strong>${value}</strong></div>`;editor.innerHTML=`<div class="stat-grid">${card('expectedWins','Expected wins',a.expectedWins.toFixed(2))}${card('luck','Schedule luck',signed(a.luck),a.luck>0.2?'good':a.luck<-.2?'bad':'')}${card('allPlay','All-play record',allPlay)}${card('avgRank','Avg weekly rank',`${a.avgWeeklyRank.toFixed(1)} of ${teams.length}`)}${card('recentForm','Recent form',`${signed(a.recentZ)} z`)}${card('consistency','Consistency',`${a.consistency.toFixed(1)} σ`)}${card('allPlayRank','All-play rank',allPlayRank)}${card('playoffOdds','Playoff odds',`${a.playoffOdds.toFixed(0)}%`)}${card('badBeats','Bad beats',a.badBeats)}${card('thiefWins','Thief wins',a.thiefWins)}${card('closestGame','Closest game',esc(a.closestGame),'wide')}${card('largestBlowout','Largest blowout',esc(a.largestBlowout),'wide')}</div><div class="report-note">Playoff odds use 3,000 history-based schedule simulations. They reflect past scoring, not injuries or player projections.</div>`;renderRegret()}
 function signed(v){return `${v>0?'+':''}${Number(v).toFixed(2)}`}
 function fmtHalf(v){return Number.isInteger(v)?String(v):Number(v).toFixed(1)}
+const regretView=RegretView.create($('#regretReport'),$('#regretTeamLabel'));
+function renderRegret(){regretView.render({teams,regretByRoster,regretError,regretLoaded,isSyncing,selected})}
+const historyView=ManagerHistory.create($('#managerHistory'));
+function renderManagerHistory(){if(!managerHistory&&isSyncing){$('#managerHistory').innerHTML='<div class="chart-empty">Loading linked league seasons…</div>';return}historyView.render(managerHistory)}
 function infoIcon(key){const title=metricInfo[key]?.title||'this metric';return `<button class="info-btn" data-info="${key}" aria-label="How ${esc(title.toLowerCase())} is calculated">i</button>`}
 const metricInfo={
   powerScore:{title:'Power score',body:'The overall ranking score combines three league-relative percentiles. Expected wins contribute 45%, season scoring strength contributes 35%, and recent form contributes 20%.',example:'A score of 100 means the team leads the league on the combined formula; it does not mean the team is perfect.'},
@@ -43,72 +51,65 @@ const metricInfo={
   consistency:{title:'Consistency',body:'Consistency is the population standard deviation of the team’s completed weekly scores. A smaller number means the team scores in a tighter range.',example:'A value of 8.2 means weekly scores typically vary by about 8.2 points from the team’s average.'},
   allPlayRank:{title:'All-play rank',body:'Teams are ranked by their all-play results: how often their weekly scores would have beaten every other team in the league.',example:'A rank of #2 means only one team has a better cumulative all-play record.'},
   playoffOdds:{title:'Playoff odds',body:'The site runs 3,000 simulations of the remaining regular-season schedule. Future scores are sampled from each team’s completed games with more weight on recent weeks, then teams are ranked by wins and points.',example:'These are history-based odds and do not account for injuries, trades, or external player projections.'},
-  awardJuggernaut:{title:'Juggernaut award',body:'Juggernaut goes to the team with the most first-place weekly scoring finishes.',example:'Ties are broken by the current power score.'},
-  awardHeartbreak:{title:'Heartbreak Kid award',body:'Heartbreak Kid goes to the team with the most losses in weeks when it still scored above the league median.',example:'It recognizes strong performances spoiled by an even stronger opponent.'},
-  awardEscape:{title:'Escape Artist award',body:'Escape Artist goes to the team with the most wins in weeks when it scored below the league median.',example:'It celebrates victories that most of the league would not have earned.'},
-  awardMetronome:{title:'Metronome award',body:'Metronome goes to the team with the smallest standard deviation in weekly scores.',example:'A smaller scoring deviation means a steadier, more predictable team.'},
-  awardRollercoaster:{title:'Rollercoaster award',body:'Rollercoaster goes to the team with the largest standard deviation in weekly scores.',example:'A larger scoring deviation means bigger swings between weekly highs and lows.'},
-  awardLuckyDuck:{title:'Lucky Duck award',body:'Lucky Duck goes to the team with the largest positive gap between actual wins and expected wins.',example:'A positive gap suggests the schedule converted the team’s scores into more wins than usual.'},
+  ...AwardsChart.metricInfo,
   badBeats:{title:'Bad beats',body:'A bad beat is a head-to-head loss in a week when the team scored above the league median.',example:'The team performed better than at least half the league but still drew an even stronger opponent.'},
   thiefWins:{title:'Thief wins',body:'A thief win is a head-to-head victory in a week when the team scored below the league median.',example:'The team won despite a score that would have lost to at least half the league.'},
   closestGame:{title:'Closest game',body:'The completed matchup with the smallest absolute margin between the team and its opponent.',example:'Both close wins and close losses are eligible.'},
   largestBlowout:{title:'Largest blowout',body:'The completed matchup with the largest absolute scoring margin.',example:'The label shows whether the team won or lost and by how many points.'}
 };
 function openMetricInfo(key){const info=metricInfo[key];if(!info)return;$('#infoTitle').textContent=info.title;$('#infoBody').textContent=info.body;$('#infoExample').textContent=info.example;$('#infoDialog').showModal()}
-function renderAwards(){
-  const holder=$('#awardsStrip'),eligible=sorted().filter(t=>t.analytics?.weeklyScores?.length);
-  if(!eligible.length){holder.innerHTML='<div class="chart-empty">Sync a Sleeper league to reveal the awards.</div>';return}
-  const most=getter=>[...eligible].sort((a,b)=>getter(b)-getter(a)||score(b)-score(a))[0];
-  const weeklyCrowns=t=>t.analytics.weeklyScores.filter(w=>w.rank===1).length;
-  const juggernaut=most(weeklyCrowns),heartbreak=most(t=>t.analytics.badBeats),escape=most(t=>t.analytics.thiefWins),luckyDuck=most(t=>t.analytics.luck);
-  const steadyPool=eligible.filter(t=>t.analytics.weeklyScores.length>1),metronome=steadyPool.length?[...steadyPool].sort((a,b)=>a.analytics.consistency-b.analytics.consistency||score(b)-score(a))[0]:eligible[0],rollercoaster=steadyPool.length?most(t=>t.analytics.consistency):eligible[0];
-  const plural=(value,word)=>`${value} ${word}${value===1?'':'s'}`;
-  const awards=[
-    ['👑','Juggernaut','awardJuggernaut',juggernaut,plural(weeklyCrowns(juggernaut),'weekly crown')],
-    ['💔','Heartbreak Kid','awardHeartbreak',heartbreak,plural(heartbreak.analytics.badBeats,'above-median loss')],
-    ['🥷','Escape Artist','awardEscape',escape,plural(escape.analytics.thiefWins,'below-median win')],
-    ['🎯','Metronome','awardMetronome',metronome,`${metronome.analytics.consistency.toFixed(1)}-point scoring deviation`],
-    ['🎢','Rollercoaster','awardRollercoaster',rollercoaster,`${rollercoaster.analytics.consistency.toFixed(1)}-point scoring deviation`],
-    ['🍀','Lucky Duck','awardLuckyDuck',luckyDuck,`${signed(luckyDuck.analytics.luck)} wins from schedule luck`]
-  ];
-  holder.innerHTML=awards.map(([icon,title,key,team,detail])=>`<article class="award-card"><div class="award-icon" aria-hidden="true">${icon}</div><div class="award-title"><span>${title}</span>${infoIcon(key)}</div><div class="award-team" title="${esc(team.name)}">${esc(team.name)}</div><div class="award-detail">${detail}</div></article>`).join('');
-}
-function renderScoringProfiles(){
-  const holder=$('#scoringProfiles'),teamsWithScores=sorted().filter(t=>t.analytics?.weeklyScores?.length);
-  if(!teamsWithScores.length){holder.innerHTML='<div class="chart-empty">Sync a Sleeper league to build team scoring profiles.</div>';return}
-  const rows=teamsWithScores.map(team=>{const values=team.analytics.weeklyScores.map(w=>w.score);return {team,min:Math.min(...values),max:Math.max(...values),average:mean(values)}}),allScores=teamsWithScores.flatMap(t=>t.analytics.weeklyScores.map(w=>w.score)),leagueAverage=mean(allScores),rawMin=Math.min(...allScores),rawMax=Math.max(...allScores),padding=Math.max(8,(rawMax-rawMin)*.08),domainMin=Math.max(0,Math.floor((rawMin-padding)/10)*10),domainMax=Math.ceil((rawMax+padding)/10)*10,width=1060,left=220,right=112,top=24,rowHeight=44,bottom=58,height=top+rows.length*rowHeight+bottom,plotRight=width-right,plotBottom=top+rows.length*rowHeight,xFor=value=>left+(value-domainMin)/(domainMax-domainMin)*(plotRight-left),span=domainMax-domainMin,tickStep=span<=60?10:span<=120?20:25,ticks=[];
-  for(let value=Math.ceil(domainMin/tickStep)*tickStep;value<=domainMax;value+=tickStep)ticks.push(value);
-  let svg=`<svg class="profile-svg" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="profile-svg-title profile-svg-desc"><title id="profile-svg-title">Team weekly scoring profiles</title><desc id="profile-svg-desc">Each horizontal line runs from the team’s lowest to highest weekly score. The diamond marks its average, and the dashed vertical line marks the league average.</desc><rect class="profile-frame" x="${left}" y="${top}" width="${plotRight-left}" height="${plotBottom-top}"/>`;
-  for(const tick of ticks){const x=xFor(tick);svg+=`<line class="profile-grid" x1="${x}" y1="${top}" x2="${x}" y2="${plotBottom}"/><text class="profile-axis" x="${x}" y="${plotBottom+25}" text-anchor="middle">${tick}</text>`}
-  const leagueX=xFor(leagueAverage);svg+=`<line class="profile-league" x1="${leagueX}" y1="${top}" x2="${leagueX}" y2="${plotBottom}"/><text class="profile-league-label" x="${leagueX+6}" y="${top+14}">League avg ${leagueAverage.toFixed(1)}</text>`;
-  rows.forEach((row,index)=>{const y=top+index*rowHeight+rowHeight/2,minX=xFor(row.min),maxX=xFor(row.max),averageX=xFor(row.average);svg+=`<line class="profile-row-rule" x1="${left}" y1="${y+rowHeight/2}" x2="${plotRight}" y2="${y+rowHeight/2}"/><text class="profile-team" x="${left-16}" y="${y+5}" text-anchor="end">${esc(shortName(row.team.name))}</text><line class="profile-range" x1="${minX}" y1="${y}" x2="${maxX}" y2="${y}"><title>${esc(row.team.name)} range: ${row.min.toFixed(1)} to ${row.max.toFixed(1)} points</title></line><circle class="profile-end" cx="${minX}" cy="${y}" r="5"/><circle class="profile-end" cx="${maxX}" cy="${y}" r="5"/><rect class="profile-average" x="${averageX-6}" y="${y-6}" width="12" height="12" transform="rotate(45 ${averageX} ${y})"><title>${esc(row.team.name)} average: ${row.average.toFixed(1)} points</title></rect><text class="profile-value" x="${maxX+10}" y="${y+5}">${row.average.toFixed(1)} avg</text>`});
-  svg+=`<text class="profile-axis-title" x="${(left+plotRight)/2}" y="${height-16}" text-anchor="middle">Weekly points</text>`;
-  holder.innerHTML=svg+'</svg>';
-}
-function renderScoringHeatmap(){
-  const holder=$('#scoringHeatmap'),rows=sorted().filter(t=>t.analytics?.weeklyScores?.length);
-  if(!rows.length){holder.innerHTML='<div class="chart-empty">Sync a Sleeper league to build the scoring heatmap.</div>';return}
-  const weeks=[...new Set(rows.flatMap(t=>t.analytics.weeklyScores.map(w=>w.week)))].sort((a,b)=>a-b),teamCount=teams.length;
-  const body=rows.map(team=>{const byWeek=new Map(team.analytics.weeklyScores.map(w=>[w.week,w]));return `<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${weeks.map(week=>{const value=byWeek.get(week);if(!value)return '<td class="heat-cell">—</td>';const percentile=teamCount>1?1-(value.rank-1)/(teamCount-1):1,bucket=Math.max(1,Math.min(5,Math.ceil(percentile*5)));return `<td class="heat-cell heat-${bucket}" title="${esc(team.name)} scored ${value.score.toFixed(1)} in Week ${week}, ranking #${value.rank}" aria-label="${esc(team.name)}, Week ${week}: ${value.score.toFixed(1)} points, rank ${value.rank}"><span>${value.score.toFixed(1)}</span><small>#${value.rank}</small></td>`}).join('')}</tr>`}).join('');
-  holder.innerHTML=`<table class="data-table heatmap-table"><thead><tr><th scope="col">Team</th>${weeks.map(w=>`<th scope="col">W${w}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
-}
-function renderScheduleMatrix(){
-  const holder=$('#scheduleMatrix'),rows=sorted().filter(t=>t.analytics?.scheduleRecords);
-  if(!rows.length){holder.innerHTML='<div class="chart-empty">Sync a Sleeper league to calculate schedule swaps.</div>';return}
-  const header=rows.map(t=>`<th scope="col" title="${esc(t.name)}">${esc(shortName(t.name))}</th>`).join('');
-  const body=rows.map(team=>`<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${rows.map(scheduleTeam=>{const record=team.analytics.scheduleRecords[scheduleTeam.sleeperRosterId];if(!record)return '<td class="matrix-cell">—</td>';const text=`${record.wins}-${record.losses}${record.ties?`-${record.ties}`:''}`,actual=team.sleeperRosterId===scheduleTeam.sleeperRosterId,klass=actual?'matrix-actual':record.wins>record.losses?'matrix-good':record.losses>record.wins?'matrix-bad':'';return `<td class="matrix-cell ${klass}" title="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${text}" aria-label="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${record.wins} wins, ${record.losses} losses${record.ties?`, ${record.ties} ties`:''}">${text}</td>`}).join('')}</tr>`).join('');
-  holder.innerHTML=`<table class="data-table schedule-table"><thead><tr><th scope="col">Scoring team</th>${header}</tr></thead><tbody>${body}</tbody></table><p class="table-note">Outlined cells are actual records. When two swapped teams originally faced each other, they remain opponents for that week.</p>`;
-}
-function shortName(name){const text=String(name);return text.length>12?`${text.slice(0,11)}…`:text}
-function renderTrendChart(){const holder=$('#trendChart'),legend=$('#trendLegend'),series=teams.filter(t=>t.analytics?.rankHistory?.length);if(!series.length){holder.innerHTML='<div class="chart-empty">Sync a Sleeper league to build the weekly chart.</div>';legend.innerHTML='';return}const colors=['#ed5a1f','#7057ff','#087e8b','#d4316f','#6b8e23','#d18b00','#2962a8','#8b5e3c','#9c3db4','#3a8d5d','#c44d29','#47738f'],width=1060,height=420,left=54,right=26,top=24,bottom=46,weeks=series[0].analytics.rankHistory.map(x=>x.week),xFor=(week,i)=>weeks.length===1?(left+width-right)/2:left+i*(width-left-right)/(weeks.length-1),yFor=rank=>top+(rank-1)*(height-top-bottom)/Math.max(1,teams.length-1);let svg=`<svg class="trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Weekly power ranking movement for all teams">`;for(let r=1;r<=teams.length;r++){const y=yFor(r);svg+=`<line class="chart-grid" x1="${left}" y1="${y}" x2="${width-right}" y2="${y}"/><text class="chart-axis" x="${left-16}" y="${y+4}" text-anchor="middle">${r}</text>`}weeks.forEach((week,i)=>{const x=xFor(week,i);svg+=`<text class="chart-axis" x="${x}" y="${height-17}" text-anchor="middle">W${week}</text>`});series.forEach((team,i)=>{const color=colors[i%colors.length],points=team.analytics.rankHistory.map((p,j)=>`${xFor(p.week,j)},${yFor(p.rank)}`).join(' ');svg+=`<g class="chart-series" data-chart-series="${team.id}"><polyline class="chart-line" points="${points}" stroke="${color}"/>${team.analytics.rankHistory.map((p,j)=>`<circle class="chart-point" cx="${xFor(p.week,j)}" cy="${yFor(p.rank)}" r="5" fill="${color}"><title>${esc(team.name)} · Week ${p.week}: #${p.rank} (${p.score.toFixed(1)})</title></circle>`).join('')}</g>`});holder.innerHTML=svg+'</svg>';legend.innerHTML=series.map((team,i)=>`<button class="chart-key" data-chart-team="${team.id}" title="Show ${esc(team.name)}"><span class="chart-dot" style="background:${colors[i%colors.length]}"></span>${esc(team.name)}</button>`).join('');legend.querySelectorAll('.chart-key').forEach(btn=>btn.onclick=()=>{chartFocus=chartFocus===btn.dataset.chartTeam?null:btn.dataset.chartTeam;applyChartFocus()});applyChartFocus()}
-function applyChartFocus(){document.querySelectorAll('[data-chart-series]').forEach(el=>{el.classList.toggle('dimmed',!!chartFocus&&el.dataset.chartSeries!==chartFocus);el.classList.toggle('focused',el.dataset.chartSeries===chartFocus)});document.querySelectorAll('[data-chart-team]').forEach(el=>el.classList.toggle('active',el.dataset.chartTeam===chartFocus))}
+function renderAwards(){AwardsChart.render($('#awardsStrip'),teams,infoIcon)}
+function renderScoringProfiles(){ScoringProfilesChart.render($('#scoringProfiles'),teams)}
+function renderScoringHeatmap(){ScoringHeatmapChart.render($('#scoringHeatmap'),teams)}
+function renderScheduleMatrix(){ScheduleMatrixChart.render($('#scheduleMatrix'),teams)}
+function renderTrendChart(){PowerMovementChart.render($('#trendChart'),$('#trendLegend'),teams)}
 function renderSyncMeta(){const el=$('#syncMeta');if(!sleeperConnection){el.textContent=isSyncing?'Connecting to Sleeper…':'Sleeper not connected';$('#weekChip').textContent='Sleeper league sync';$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Sync league';return}const when=new Date(sleeperConnection.syncedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});el.innerHTML=`<span><strong>${esc(sleeperConnection.leagueName)}</strong><br>Last synced ${when} · Auto-checks Thu, Sun &amp; Mon</span>`;$('#weekChip').textContent=`Sleeper · ${sleeperConnection.season} Week ${sleeperConnection.week}`;$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Switch league'}
 $('#sleeperBtn').onclick=()=>{$('#leagueId').value=sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID;$('#sleeperDialog').showModal();setTimeout(()=>{$('#leagueId').focus();$('#leagueId').select()},50)};$('#cancelSleeper').onclick=()=>$('#sleeperDialog').close();$('#sleeperForm').onsubmit=async e=>{e.preventDefault();await syncSleeper(new FormData(e.currentTarget).get('leagueId'))};
 async function sleeperGet(path){const response=await fetch(`https://api.sleeper.app/v1/${path}`);if(!response.ok)throw new Error(response.status===404?'League not found. Double-check the league ID.':'Sleeper is unavailable right now. Try again shortly.');return response.json()}
-async function syncSleeper(rawId){const leagueId=String(rawId||'').trim();if(!/^\d+$/.test(leagueId)){toast('Enter a valid numeric league ID');return}const btn=$('#sleeperBtn'),connect=$('#connectBtn');isSyncing=true;btn.disabled=true;connect.disabled=true;btn.textContent='Analyzing…';connect.textContent='Analyzing…';if(!teams.length)render();try{const [league,users,rosters,state]=await Promise.all([sleeperGet(`league/${leagueId}`),sleeperGet(`league/${leagueId}/users`),sleeperGet(`league/${leagueId}/rosters`),sleeperGet('state/nfl')]);if(!league?.league_id||!Array.isArray(users)||!Array.isArray(rosters))throw new Error('Sleeper returned incomplete league data.');const regularWeeks=Math.max(1,Number(league.settings?.playoff_week_start||15)-1),currentWeek=Math.max(1,Number(state.week||state.display_week||1));const matchupWeeks=await Promise.all(Array.from({length:regularWeeks},(_,i)=>sleeperGet(`league/${leagueId}/matchups/${i+1}`)));const weekData=matchupWeeks.map((entries,i)=>({week:i+1,entries:Array.isArray(entries)?entries:[]}));const people=new Map(users.map(u=>[u.user_id,u])),sameLeague=sleeperConnection?.leagueId===leagueId,oldRanks=sameLeague?new Map(sorted().map((t,i)=>[t.id,i+1])):new Map(),hadAnalytics=sameLeague&&teams.some(t=>t.analytics);const nextTeams=rosters.map((r,index)=>{const person=people.get(r.owner_id)||{},settings=r.settings||{},games=Number(settings.wins||0)+Number(settings.losses||0)+Number(settings.ties||0),total=Number(settings.fpts||0)+Number(settings.fpts_decimal||0)/100;return {id:`sleeper-${r.roster_id}`,sleeperRosterId:Number(r.roster_id),name:person.metadata?.team_name||person.display_name||person.username||`Team ${r.roster_id}`,owner:person.display_name||person.username||'Co-manager',wins:0,losses:0,ties:0,points:games?total/games:100,prev:oldRanks.get(`sleeper-${r.roster_id}`)||index+1}});analyzeLeague(nextTeams,weekData,currentWeek,league,leagueId);teams=nextTeams;if(!hadAnalytics)sorted().forEach((team,index)=>team.prev=index+1);const completedWeeks=Math.max(0,currentWeek-1);sleeperConnection={leagueId,leagueName:league.name||'Sleeper league',season:league.season||state.season,week:state.display_week||state.week,completedWeeks,syncedAt:new Date().toISOString()};localStorage.setItem('power-board-sleeper',JSON.stringify(sleeperConnection));selected=sorted()[0]?.id;$('#sleeperDialog').close();toast(`${sleeperConnection.leagueName} analyzed`)}catch(error){console.error(error);toast(error.message||'Could not sync Sleeper')}finally{isSyncing=false;btn.disabled=false;connect.disabled=false;connect.textContent='Sync & analyze';render()}}
+async function syncSleeper(rawId){
+  const leagueId=String(rawId||'').trim();
+  if(!/^\d+$/.test(leagueId)){toast('Enter a valid numeric league ID');return}
+  const btn=$('#sleeperBtn'),connect=$('#connectBtn');
+  isSyncing=true;btn.disabled=true;connect.disabled=true;btn.textContent='Analyzing…';connect.textContent='Analyzing…';
+  if(!teams.length)render();else renderRegret();
+  try{
+    const [league,users,rosters,state]=await Promise.all([sleeperGet(`league/${leagueId}`),sleeperGet(`league/${leagueId}/users`),sleeperGet(`league/${leagueId}/rosters`),sleeperGet('state/nfl')]);
+    if(!league?.league_id||!Array.isArray(users)||!Array.isArray(rosters))throw new Error('Sleeper returned incomplete league data.');
+    const regularWeeks=Math.max(1,Number(league.settings?.playoff_week_start||15)-1),currentWeek=Math.max(1,Number(state.week||state.display_week||1));
+    const matchupWeeks=await Promise.all(Array.from({length:regularWeeks},(_,i)=>sleeperGet(`league/${leagueId}/matchups/${i+1}`)));
+    const weekData=matchupWeeks.map((entries,i)=>({week:i+1,entries:Array.isArray(entries)?entries:[]}));
+    const people=new Map(users.map(u=>[u.user_id,u])),sameLeague=sleeperConnection?.leagueId===leagueId,oldRanks=sameLeague?new Map(sorted().map((t,i)=>[t.id,i+1])):new Map(),hadAnalytics=sameLeague&&teams.some(t=>t.analytics);
+    const nextTeams=rosters.map((r,index)=>{const person=people.get(r.owner_id)||{},settings=r.settings||{},games=Number(settings.wins||0)+Number(settings.losses||0)+Number(settings.ties||0),total=Number(settings.fpts||0)+Number(settings.fpts_decimal||0)/100;return {id:`sleeper-${r.roster_id}`,sleeperRosterId:Number(r.roster_id),name:person.metadata?.team_name||person.display_name||person.username||`Team ${r.roster_id}`,owner:person.display_name||person.username||'Co-manager',wins:0,losses:0,ties:0,points:games?total/games:100,prev:oldRanks.get(`sleeper-${r.roster_id}`)||index+1}});
+    analyzeLeague(nextTeams,weekData,currentWeek,league,leagueId);
+    teams=nextTeams;
+    if(!sameLeague){regretByRoster={};regretLoaded=false;managerHistory=null}
+    regretError='';
+    if(!hadAnalytics)sorted().forEach((team,index)=>team.prev=index+1);
+    const completedWeeks=Math.max(0,currentWeek-1);
+    sleeperConnection={leagueId,leagueName:league.name||'Sleeper league',season:league.season||state.season,week:state.display_week||state.week,completedWeeks,syncedAt:new Date().toISOString()};
+    localStorage.setItem('power-board-sleeper',JSON.stringify(sleeperConnection));
+    selected=sorted()[0]?.id;$('#sleeperDialog').close();toast(`${sleeperConnection.leagueName} analyzed`);
+    render();
+    const [regretResult,historyResult]=await Promise.allSettled([
+      Regret.load(leagueId,league,weekData,currentWeek),
+      ManagerHistory.loadChain(league,users,rosters,sleeperGet)
+    ]);
+    if(regretResult.status==='fulfilled'){
+      regretByRoster=Object.fromEntries(regretResult.value);regretError='';regretLoaded=true;
+      localStorage.setItem('power-board-regret',JSON.stringify({leagueId,version:REGRET_CACHE_VERSION,rows:regretByRoster}));
+    }else{console.error('Transaction analysis failed',regretResult.reason);regretByRoster={};regretLoaded=false;regretError=regretResult.reason?.message||'Sleeper data could not be loaded'}
+    if(historyResult.status==='fulfilled'){
+      managerHistory=historyResult.value;ManagerHistory.writeCache(managerHistory);
+    }else{
+      console.error('Manager history failed',historyResult.reason);
+      managerHistory={rootLeagueId:leagueId,seasons:[ManagerHistory.normalizeSeason(league,users,rosters)],error:historyResult.reason?.message||'Older seasons could not be loaded'};
+    }
+  }catch(error){console.error(error);toast(error.message||'Could not sync Sleeper')}
+  finally{isSyncing=false;btn.disabled=false;connect.disabled=false;connect.textContent='Sync & analyze';render()}
+}
 function analyzeLeague(teamList,weekData,currentWeek,league,leagueId){
   const ids=teamList.map(t=>t.sleeperRosterId);
-  const stats=new Map(ids.map(id=>[id,{scores:[],weeklyScores:[],zs:[],expectedParts:[],expectedWins:0,allPlayWins:0,allPlayLosses:0,allPlayTies:0,rankSum:0,actualWins:0,actualLosses:0,actualTies:0,pointsAgainst:0,badBeats:0,thiefWins:0,closest:null,blowout:null}]));
+  const stats=new Map(ids.map(id=>[id,{scores:[],weeklyScores:[],zs:[],expectedParts:[],expectedWins:0,allPlayWins:0,allPlayLosses:0,allPlayTies:0,rankSum:0,actualWins:0,actualLosses:0,actualTies:0,pointsAgainst:0,badBeats:0,thiefWins:0,defensePoints:0,defenseStarts:0,closest:null,blowout:null}]));
   const past=weekData.filter(w=>w.week<currentWeek&&w.entries.length>1);
   for(const week of past){
     const entries=week.entries.filter(e=>stats.has(Number(e.roster_id))),scores=entries.map(e=>Number(e.points||0));
@@ -118,6 +119,8 @@ function analyzeLeague(teamList,weekData,currentWeek,league,leagueId){
       const id=Number(entry.roster_id),s=stats.get(id),pts=Number(entry.points||0),wins=scores.filter(x=>pts>x).length,ties=Math.max(0,scores.filter(x=>pts===x).length-1),expected=(wins+.5*ties)/(scores.length-1);
       const weeklyRank=ranked.findIndex(x=>Number(x.roster_id)===id)+1;
       s.scores.push(pts);s.weeklyScores.push({week:week.week,score:pts,rank:weeklyRank});s.zs.push(spread?(pts-avg)/spread:0);s.expectedParts.push(expected);s.expectedWins+=expected;s.allPlayWins+=wins;s.allPlayTies+=ties;s.allPlayLosses+=scores.length-1-wins-ties;s.rankSum+=weeklyRank;
+      const defense=startedDefensePoints(entry,league.roster_positions);
+      s.defensePoints+=defense.points;s.defenseStarts+=defense.starts;
     }
     for(const pair of groupMatchups(entries)){if(pair.length!==2)continue;const [a,b]=pair,ap=Number(a.points||0),bp=Number(b.points||0);applyResult(stats.get(Number(a.roster_id)),ap,bp,med,week.week);applyResult(stats.get(Number(b.roster_id)),bp,ap,med,week.week)}
   }
@@ -130,22 +133,25 @@ function analyzeLeague(teamList,weekData,currentWeek,league,leagueId){
   }
   const expValues={},seasonValues={},recentValues={};
   for(const id of ids){const s=stats.get(id),count=Math.max(1,s.scores.length);expValues[id]=s.expectedWins/count;seasonValues[id]=mean(s.zs);recentValues[id]=weightedRecent(s.zs)}
-  const expPct=percentiles(expValues),seasonPct=percentiles(seasonValues),recentPct=percentiles(recentValues),odds=simulatePlayoffs([...ids],stats,weekData,currentWeek,Number(league.settings?.playoff_teams||6),leagueId),scheduleRecords=buildScheduleSwapRecords(ids,past);
-  for(const team of teamList){const s=stats.get(team.sleeperRosterId),count=Math.max(1,s.scores.length);team.wins=s.actualWins;team.losses=s.actualLosses;team.ties=s.actualTies;team.points=mean(s.scores)||team.points;team.analytics={powerScore:.45*expPct[team.sleeperRosterId]+.35*seasonPct[team.sleeperRosterId]+.20*recentPct[team.sleeperRosterId],expectedWins:s.expectedWins,luck:s.actualWins+.5*s.actualTies-s.expectedWins,allPlayWins:s.allPlayWins,allPlayLosses:s.allPlayLosses,allPlayTies:s.allPlayTies,avgWeeklyRank:s.rankSum/count,recentZ:recentValues[team.sleeperRosterId],consistency:std(s.scores),pointsAgainst:s.pointsAgainst,badBeats:s.badBeats,thiefWins:s.thiefWins,closestGame:gameLabel(s.closest),largestBlowout:gameLabel(s.blowout),playoffOdds:odds[team.sleeperRosterId]||0,rankHistory:histories[team.sleeperRosterId],weeklyScores:s.weeklyScores,scheduleRecords:scheduleRecords[team.sleeperRosterId]}}
+  const expPct=percentiles(expValues),seasonPct=percentiles(seasonValues),recentPct=percentiles(recentValues),odds=simulatePlayoffs([...ids],stats,weekData,currentWeek,Number(league.settings?.playoff_teams||6),leagueId),scheduleRecords=ScheduleMatrixChart.buildRecords(ids,past);
+  for(const team of teamList){const s=stats.get(team.sleeperRosterId),count=Math.max(1,s.scores.length);team.wins=s.actualWins;team.losses=s.actualLosses;team.ties=s.actualTies;team.points=mean(s.scores)||team.points;team.analytics={powerScore:.45*expPct[team.sleeperRosterId]+.35*seasonPct[team.sleeperRosterId]+.20*recentPct[team.sleeperRosterId],expectedWins:s.expectedWins,luck:s.actualWins+.5*s.actualTies-s.expectedWins,allPlayWins:s.allPlayWins,allPlayLosses:s.allPlayLosses,allPlayTies:s.allPlayTies,avgWeeklyRank:s.rankSum/count,recentZ:recentValues[team.sleeperRosterId],consistency:std(s.scores),pointsAgainst:s.pointsAgainst,badBeats:s.badBeats,thiefWins:s.thiefWins,defensePoints:s.defensePoints,defenseStarts:s.defenseStarts,closestGame:gameLabel(s.closest),largestBlowout:gameLabel(s.blowout),playoffOdds:odds[team.sleeperRosterId]||0,rankHistory:histories[team.sleeperRosterId],weeklyScores:s.weeklyScores,scheduleRecords:scheduleRecords[team.sleeperRosterId]}}
   const allPlayScores=teamList.map(t=>t.analytics.allPlayWins+.5*t.analytics.allPlayTies);
   for(const team of teamList){const value=team.analytics.allPlayWins+.5*team.analytics.allPlayTies;team.analytics.allPlayRank=1+allPlayScores.filter(other=>other>value).length}
 }
 function applyResult(s,pts,opp,med,week){const margin=pts-opp;if(margin>0)s.actualWins++;else if(margin<0)s.actualLosses++;else s.actualTies++;s.pointsAgainst+=opp;if(margin<0&&pts>med)s.badBeats++;if(margin>0&&pts<med)s.thiefWins++;const game={week,margin,abs:Math.abs(margin)};if(!s.closest||game.abs<s.closest.abs)s.closest=game;if(!s.blowout||game.abs>s.blowout.abs)s.blowout=game}
-function groupMatchups(entries){const groups=new Map();for(const e of entries){if(e.matchup_id==null)continue;const key=String(e.matchup_id);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(e)}return [...groups.values()]}
-function buildScheduleSwapRecords(ids,past){
-  const records=Object.fromEntries(ids.map(id=>[id,Object.fromEntries(ids.map(scheduleId=>[scheduleId,{wins:0,losses:0,ties:0}]))]));
-  for(const week of past){
-    const entries=week.entries.filter(e=>ids.includes(Number(e.roster_id))),byId=new Map(entries.map(e=>[Number(e.roster_id),e])),opponents=new Map();
-    for(const pair of groupMatchups(entries)){if(pair.length!==2)continue;const a=Number(pair[0].roster_id),b=Number(pair[1].roster_id);opponents.set(a,b);opponents.set(b,a)}
-    for(const scoringId of ids){const scoringEntry=byId.get(scoringId);if(!scoringEntry)continue;for(const scheduleId of ids){let opponentId=opponents.get(scheduleId);if(opponentId===scoringId&&scheduleId!==scoringId)opponentId=scheduleId;const opponentEntry=byId.get(opponentId);if(!opponentEntry)continue;const result=records[scoringId][scheduleId],scoreValue=Number(scoringEntry.points||0),opponentScore=Number(opponentEntry.points||0);if(scoreValue>opponentScore)result.wins++;else if(scoreValue<opponentScore)result.losses++;else result.ties++}}
-  }
-  return records;
+function startedDefensePoints(entry,rosterPositions){
+  if(!Array.isArray(entry.starters)||!Array.isArray(rosterPositions))return {points:0,starts:0};
+  return rosterPositions.reduce((total,slot,index)=>{
+    if(slot!=='DEF')return total;
+    const id=entry.starters[index];
+    if(!id||id==='0')return total;
+    const raw=entry.starters_points?.[index]??entry.players_points?.[id];
+    if(raw==null||!Number.isFinite(Number(raw)))return total;
+    total.points+=Number(raw);total.starts++;
+    return total;
+  },{points:0,starts:0});
 }
+function groupMatchups(entries){const groups=new Map();for(const e of entries){if(e.matchup_id==null)continue;const key=String(e.matchup_id);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(e)}return [...groups.values()]}
 function simulatePlayoffs(ids,stats,weekData,currentWeek,playoffTeams,seedText){const makes=Object.fromEntries(ids.map(id=>[id,0])),future=weekData.filter(w=>w.week>=currentWeek),rng=seededRandom(seedText);for(let sim=0;sim<3000;sim++){const table=Object.fromEntries(ids.map(id=>{const s=stats.get(id);return [id,{wins:s.actualWins+.5*s.actualTies,pf:s.scores.reduce((a,b)=>a+b,0)}]}));for(const week of future){for(const pair of groupMatchups(week.entries)){if(pair.length!==2)continue;const a=Number(pair[0].roster_id),b=Number(pair[1].roster_id);if(!table[a]||!table[b])continue;const ap=sampleRecent(stats.get(a).scores,rng),bp=sampleRecent(stats.get(b).scores,rng);table[a].pf+=ap;table[b].pf+=bp;if(ap>bp)table[a].wins++;else if(bp>ap)table[b].wins++;else{table[a].wins+=.5;table[b].wins+=.5}}}ids.sort((a,b)=>table[b].wins-table[a].wins||table[b].pf-table[a].pf).slice(0,Math.min(playoffTeams,ids.length)).forEach(id=>makes[id]++)}return Object.fromEntries(ids.map(id=>[id,makes[id]/30]))}
 function sampleRecent(values,rng){if(!values.length)return 100;const weights=values.map((_,i)=>Math.pow(.75,values.length-1-i)),total=weights.reduce((a,b)=>a+b,0);let target=rng()*total;for(let i=0;i<values.length;i++){target-=weights[i];if(target<=0)return values[i]}return values[values.length-1]}
 function seededRandom(text){let seed=2166136261;for(const c of String(text)){seed^=c.charCodeAt(0);seed=Math.imul(seed,16777619)}return()=>{seed+=0x6D2B79F5;let t=seed;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
@@ -159,5 +165,7 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 document.addEventListener('click',event=>{const btn=event.target.closest('.info-btn');if(!btn)return;event.preventDefault();event.stopPropagation();openMetricInfo(btn.dataset.info)});$('#closeInfo').onclick=()=>$('#infoDialog').close();
 function registerWebMCP(){const c=document.modelContext;if(!c?.registerTool)return;try{c.registerTool({name:'get_power_rankings',title:'Get power rankings',description:'Return the current ordered fantasy football power rankings and scores.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute:()=>({rankings:sorted().map((t,i)=>({rank:i+1,team:t.name,manager:t.owner,score:Number(score(t).toFixed(1))}))})})}catch(e){console.warn('WebMCP unavailable',e)}}
 function shouldAutoSync(now=new Date()){if(!sleeperConnection?.leagueId||!AUTO_SYNC_DAYS.has(now.getDay()))return false;const lastSync=Date.parse(sleeperConnection.syncedAt);return !Number.isFinite(lastSync)||now.getTime()-lastSync>=AUTO_SYNC_MAX_AGE_MS}
-const needsAnalyticsRefresh=teams.some(t=>!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank));
-render();registerWebMCP();if(!teams.length||needsAnalyticsRefresh||shouldAutoSync())syncSleeper(sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID);
+const needsAnalyticsRefresh=teams.some(t=>!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank)||!Number.isFinite(t.analytics?.defensePoints)||!Number.isFinite(t.analytics?.defenseStarts));
+const needsRegretRefresh=Boolean(sleeperConnection?.leagueId)&&!regretLoaded;
+const needsHistoryRefresh=Boolean(sleeperConnection?.leagueId)&&!managerHistory;
+render();registerWebMCP();if(!teams.length||needsAnalyticsRefresh||needsRegretRefresh||needsHistoryRefresh||shouldAutoSync())syncSleeper(sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID);

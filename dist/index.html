@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="The Bubble Bruins fantasy football league power rankings, built from expected wins, scoring strength, recent form, luck, and playoff odds." />
-  <title>Bubble Bruins — League Power Rankings</title>
+  <meta name="description" content="Fantasy football league power rankings, scoring trends, trades, and manager history from Sleeper." />
+  <title>Fantasy Football Sucks — League Power Rankings</title>
   <script>try{if(localStorage.getItem('power-board-theme')==='dark')document.documentElement.dataset.theme='dark'}catch{}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><div class="brand-ball" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16 19 8M8 8l8 8M9.5 10.5l3-1.8M11.5 13.5l3-1.8M13.5 16.5l3-1.8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="brand-name">Bubble <span>Bruins</span></div></div>
+      <div class="brand"><div class="brand-ball" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 16 19 8M8 8l8 8M9.5 10.5l3-1.8M11.5 13.5l3-1.8M13.5 16.5l3-1.8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div class="brand-name">Fantasy Football <span>Sucks</span></div></div>
       <div class="topbar-tools">
         <div class="week-chip" id="weekChip">Commissioner's desk · Week 8</div>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
@@ -25,7 +25,7 @@
       </div>
     </header>
     <section class="hero">
-      <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>Bubble Bruins.</h1><p>Rankings, weekly movement, and the numbers behind every matchup—<strong>all in one place.</strong></p></div>
+      <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>The<br>Breakdown.</h1><p>Rankings, weekly movement, and the numbers behind every matchup—<strong>all in one place.</strong></p></div>
       <div class="ticker"><b>League snapshot</b><span id="tickerText">4 teams ranked · scores update instantly</span></div>
     </section>
     <section class="workspace">
@@ -55,17 +55,34 @@
       <div class="data-scroll" id="scoringHeatmap"></div>
     </section>
     <section class="trend-panel" aria-labelledby="profiles-title">
-      <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Each team’s weekly floor, average, and ceiling on one shared scale.</p></div><div class="profile-key" aria-label="Scoring profile legend"><span class="range-swatch"></span>Weekly range <span class="average-swatch"></span>Team average <span class="league-swatch"></span>League average</div></div>
-      <div class="chart-scroll" id="scoringProfiles"></div>
+      <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league.</p></div><div class="trend-note">All teams · completed weeks</div></div>
+      <div class="profile-board" id="scoringProfiles"></div>
+    </section>
+    <section class="trend-panel regret-panel" aria-labelledby="regret-title">
+      <div class="trend-head"><div><h2 id="regret-title">Trade Regret Analyzer</h2><p>Choose a team and move to compare actual scores with a no-move lineup.</p></div><div class="trend-note" id="regretTeamLabel">Choose a team below</div></div>
+      <div id="regretReport" class="regret-report" aria-live="polite"></div>
     </section>
     <section class="trend-panel" aria-labelledby="trend-title">
-      <div class="trend-head"><div><h2 id="trend-title">Weekly power movement</h2><p>Rankings recalculated after every completed week.</p></div><div class="trend-note">Tap a team to isolate its path</div></div>
-      <div class="chart-scroll" id="trendChart"></div><div class="chart-legend" id="trendLegend"></div>
+      <div class="trend-head"><div><h2 id="trend-title">Weekly power movement</h2><p>Every team’s weekly rank on one chart.</p></div><div class="trend-note">Hover a path or tap a team to trace it</div></div>
+      <div class="shared-movement-board" id="trendChart"></div><div class="shared-movement-legend" id="trendLegend"></div>
+    </section>
+    <section class="trend-panel history-panel" aria-labelledby="history-title">
+      <div class="trend-head"><div><h2 id="history-title">All-time manager rankings</h2><p>Compare historical rank, total points, championships, and points per season.</p></div><div class="trend-note">The league's scoring legacy</div></div>
+      <div class="history-board" id="managerHistory" aria-live="polite"></div>
     </section>
   </main>
   <dialog id="sleeperDialog"><div class="modal-head"><h3>Sync a Sleeper league</h3></div><form class="modal-body" id="sleeperForm"><div class="field"><label for="leagueId">Sleeper league ID</label><input class="text-input" id="leagueId" name="leagueId" required inputmode="numeric" pattern="[0-9]+" autocomplete="off" placeholder="123456789012345678"><div class="field-help">It’s the long number in your Sleeper league URL.</div></div><div class="field-help">Sync analyzes completed weekly matchups, schedules, records, scoring strength, recent form, and playoff outlook.</div><div class="modal-actions"><button class="btn ghost" type="button" id="cancelSleeper">Cancel</button><button class="btn sleeper" type="submit" id="connectBtn">Sync & analyze</button></div></form></dialog>
   <dialog id="infoDialog"><div class="modal-head"><h3 id="infoTitle">How it works</h3></div><div class="modal-body"><p class="info-copy" id="infoBody"></p><div class="info-example" id="infoExample"></div><div class="modal-actions"><button class="btn primary" type="button" id="closeInfo">Got it</button></div></div></dialog>
   <div class="toast" id="toast" role="status"></div>
+  <script src="regret.js"></script>
+  <script src="charts/utils.js"></script>
+  <script src="charts/awards.js"></script>
+  <script src="charts/scoring-profiles.js"></script>
+  <script src="charts/scoring-heatmap.js"></script>
+  <script src="charts/schedule-matrix.js"></script>
+  <script src="charts/power-movement.js"></script>
+  <script src="charts/regret-view.js"></script>
+  <script src="charts/manager-history.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
