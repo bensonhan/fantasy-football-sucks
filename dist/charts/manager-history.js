@@ -90,8 +90,8 @@ const ManagerHistory = (() => {
   const metrics = {
     historical: {label: 'Historical ranking', unit: 'rank pts'},
     points: {label: 'All-time points', unit: 'pts'},
-    trophies: {label: 'Trophies', unit: 'titles'},
-    perSeason: {label: 'Points per season', unit: 'pts / season'}
+    perSeason: {label: 'Points per season', unit: 'pts / season'},
+    averageFinish: {label: 'Average finish', unit: 'avg finish'}
   };
   function rank(history, year = '', metric = 'historical') {
     if (!metrics[metric]) metric = 'historical';
@@ -101,24 +101,23 @@ const ManagerHistory = (() => {
     const rows = new Map();
     for (const season of seasons) for (const manager of season.managers) {
       let row = rows.get(manager.userId);
-      if (!row) {row = {userId: manager.userId, name: manager.name, cents: 0, completedCents: 0, score: 0, finishes: 0, completedSeasons: 0, seasons: 0, trophies: 0, active: false}; rows.set(manager.userId, row);}
+      if (!row) {row = {userId: manager.userId, name: manager.name, cents: 0, completedCents: 0, score: 0, finishes: 0, completedSeasons: 0, seasons: 0, active: false}; rows.set(manager.userId, row);}
       row.cents += Math.round(manager.points * 100);
       if (season.rankable) {
         row.completedCents += Math.round(manager.points * 100);
         row.score += manager.score;
         row.finishes += manager.finish;
         row.completedSeasons++;
-        if (manager.finish === 1) row.trophies++;
       } else row.active = true;
       row.seasons++;
     }
     return [...rows.values()].map(row => ({userId: row.userId, name: row.name, points: row.cents / 100,
       score: Math.round(row.score * 100) / 100, averageFinish: row.completedSeasons ? row.finishes / row.completedSeasons : null,
-      seasons: row.seasons, completedSeasons: row.completedSeasons, trophies: row.trophies, active: row.active,
+      seasons: row.seasons, completedSeasons: row.completedSeasons, active: row.active,
       pointsPerSeason: row.completedSeasons ? Math.round(row.completedCents / row.completedSeasons) / 100 : null}))
-      .filter(row => metric !== 'trophies' || row.trophies > 0)
       .sort((a, b) => {
-        const value = row => metric === 'points' ? row.points : metric === 'trophies' ? row.trophies : metric === 'perSeason' ? row.pointsPerSeason : row.score;
+        if (metric === 'averageFinish') return a.averageFinish - b.averageFinish || b.completedSeasons - a.completedSeasons || b.points - a.points || a.name.localeCompare(b.name);
+        const value = row => metric === 'points' ? row.points : metric === 'perSeason' ? row.pointsPerSeason : row.score;
         return value(b) - value(a) || b.score - a.score || b.points - a.points || a.name.localeCompare(b.name);
       });
   }
@@ -131,22 +130,21 @@ const ManagerHistory = (() => {
     const range = [...years].sort((a, b) => Number(a) - Number(b));
     const options = `<option value="" ${year?'':'selected'}>All seasons · ${range[0]}–${range.at(-1)}</option>${history.seasons.map(season => `<option value="${esc(season.year)}" ${year===season.year?'selected':''}>${esc(season.year)}${season.rankable||metric==='points'&&season.status==='in_season'?'':' · pending'}</option>`).join('')}`;
     const metricOptions = Object.entries(metrics).map(([key, choice]) => `<option value="${key}" ${metric===key?'selected':''}>${choice.label}</option>`).join('');
-    const value = manager => metric === 'points' ? format(manager.points) : metric === 'trophies' ? String(manager.trophies) : metric === 'perSeason' ? format(manager.pointsPerSeason) : format(manager.score);
-    const unit = manager => metric === 'trophies' ? `title${manager.trophies===1?'':'s'}` : metrics[metric].unit;
-    const detail = manager => metric === 'trophies' ? `${format(manager.points)} total pts · ${manager.completedSeasons} completed season${manager.completedSeasons===1?'':'s'}` :
+    const value = manager => metric === 'points' ? format(manager.points) : metric === 'averageFinish' ? (year ? `#${manager.averageFinish.toFixed(0)}` : manager.averageFinish.toFixed(2)) : metric === 'perSeason' ? format(manager.pointsPerSeason) : format(manager.score);
+    const unit = metric === 'averageFinish' && year ? 'final place' : metrics[metric].unit;
+    const detail = manager => metric === 'averageFinish' ? `${manager.completedSeasons} completed season${manager.completedSeasons===1?'':'s'} · ${format(manager.points)} total pts` :
       metric === 'perSeason' ? `${format(manager.points)} total pts · ${manager.completedSeasons} completed season${manager.completedSeasons===1?'':'s'}` :
       metric === 'points' ? `${manager.seasons} season${manager.seasons===1?'':'s'}${manager.active?' · includes current season':''}${year&&manager.averageFinish?` · #${manager.averageFinish} final finish`:''}` :
       `${format(manager.points)} total pts · ${year?`#${manager.averageFinish} final finish`:`${manager.seasons} season${manager.seasons===1?'':'s'} · avg finish ${manager.averageFinish.toFixed(1)}`}`;
-    const podium = rankings.slice(0, 3).map((manager, i) => `<article class="history-podium history-place-${i+1}"><span class="history-medal" aria-label="Rank ${i+1}">${['🥇','🥈','🥉'][i]}</span><div><small>#${i+1} ${['Gold','Silver','Bronze'][i]}</small><h3>${esc(manager.name)}</h3><strong>${value(manager)} <span>${unit(manager)}</span></strong><p>${detail(manager)}</p></div></article>`).join('');
-    const rest = rankings.slice(3).map((manager, i) => `<div class="history-row"><b>${String(i+4).padStart(2,'0')}</b><span>${esc(manager.name)}</span><small>${detail(manager)}</small><strong>${value(manager)} ${unit(manager)}</strong></div>`).join('');
-    const empty = selected && !selected.rankable ? (metric === 'points' ? 'Point totals are not available for this season yet.' : 'Final standings are not available for this season yet. It will enter this leaderboard once the playoffs finish.') :
-      metric === 'trophies' ? 'No league championships are recorded yet.' : 'No completed seasons with final standings are available yet.';
+    const podium = rankings.slice(0, 3).map((manager, i) => `<article class="history-podium history-place-${i+1}"><span class="history-medal" aria-label="Rank ${i+1}">${['🥇','🥈','🥉'][i]}</span><div><small>#${i+1} ${['Gold','Silver','Bronze'][i]}</small><h3>${esc(manager.name)}</h3><strong>${value(manager)} <span>${unit}</span></strong><p>${detail(manager)}</p></div></article>`).join('');
+    const rest = rankings.slice(3).map((manager, i) => `<div class="history-row"><b>${String(i+4).padStart(2,'0')}</b><span>${esc(manager.name)}</span><small>${detail(manager)}</small><strong>${value(manager)} ${unit}</strong></div>`).join('');
+    const empty = selected && !selected.rankable ? (metric === 'points' ? 'Point totals are not available for this season yet.' : 'Final standings are not available for this season yet. It will enter this leaderboard once the playoffs finish.') : 'No completed seasons with final standings are available yet.';
     const method = metric === 'points' ? 'Adds each manager’s scored points across linked seasons. Completed seasons include regular-season and playoff-week scores; the current season includes points scored so far. Seasons with incomplete historical playoff data are omitted.' :
-      metric === 'trophies' ? 'One trophy is awarded for each completed season with a #1 finish in Sleeper’s winners bracket. Only managers with at least one title appear.' :
+      metric === 'averageFinish' ? 'Average final league place across completed seasons, using Sleeper’s playoff and consolation brackets. Lower is better; ties favor managers with more completed seasons. In-progress seasons are excluded.' :
       metric === 'perSeason' ? 'Average total points per completed season: regular-season points plus playoff-week scores, divided by completed seasons managed. In-progress seasons are excluded.' :
       'Each completed season earns up to 100 ranking points: 60% from total season points (regular season + playoff weeks, scaled from lowest to highest in that league year) and 40% from final bracket placement (champion to last place). All-time totals add those yearly scores; active seasons wait for final standings. Consolation placements follow Sleeper’s bracket.';
     const completedCount = history.seasons.filter(season => season.rankable).length;
-    const managerCount = `${rankings.length} ${metric==='trophies'?(rankings.length===1?'champion':'champions'):(rankings.length===1?'manager':'managers')}`;
+    const managerCount = `${rankings.length} ${rankings.length===1?'manager':'managers'}`;
     return `<div class="history-controls"><label for="historyMetricSelect">Leaderboard<select id="historyMetricSelect">${metricOptions}</select></label><label for="historyYearSelect">Season<select id="historyYearSelect">${options}</select></label><span>${managerCount} · ${year?`${year} season`:`${completedCount} completed season${completedCount===1?'':'s'}`}</span></div>${rankings.length?`<div class="history-podiums">${podium}</div>${rest?`<div class="history-rest">${rest}</div>`:''}`:`<div class="history-empty">${empty}</div>`}${history.error?`<p class="history-warning">Some history may be incomplete: ${esc(history.error)}</p>`:''}<p class="history-method">${method}</p>`;
   }
   function create(holder) {

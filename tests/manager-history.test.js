@@ -80,10 +80,11 @@ test('season dropdown shows a pending message for a year without final standings
   assert.match(holder.innerHTML, /#1 final finish/);
 });
 
-test('leaderboard dropdown switches total points, titles, and completed-season average', async () => {
+test('leaderboard dropdown switches total points, average finish, and points per season', async () => {
   const history = await History.loadChain(current,users,rosters,async path => endpoints[path]);
   const holder = {innerHTML:'',addEventListener(type,listener){this.onChange=listener;},querySelector(){return {focus(){}};}};
   History.create(holder).render(history);
+  assert.ok(holder.innerHTML.indexOf('value="perSeason"') < holder.innerHTML.indexOf('value="averageFinish"'));
   const select = value => holder.onChange({target:{id:'historyMetricSelect',value}});
   select('points');
   assert.equal(History.rank(history,'','points')[0].name, 'Alex');
@@ -94,19 +95,23 @@ test('leaderboard dropdown switches total points, titles, and completed-season a
   holder.onChange({target:{id:'historyYearSelect',value:'2026'}});
   assert.equal(History.rank(history,'2026','points')[0].points, 100);
   assert.doesNotMatch(holder.innerHTML, /Final standings are not available/);
-  select('trophies');
-  assert.deepEqual(History.rank(history,'','trophies').map(manager => manager.name), ['Blair']);
+  select('averageFinish');
+  assert.equal(History.rank(history,'','averageFinish')[0].name, 'Blair');
   assert.match(holder.innerHTML, /Final standings are not available/);
   holder.onChange({target:{id:'historyYearSelect',value:''}});
-  assert.match(holder.innerHTML, /1 <span>title<\/span>/);
-  assert.doesNotMatch(holder.innerHTML, /history-place-2/);
+  assert.match(holder.innerHTML, /Average finish/);
+  assert.match(holder.innerHTML, /1\.00 <span>avg finish<\/span>/);
+  assert.equal((holder.innerHTML.match(/class="history-podium history-place-/g) || []).length, 3);
+  holder.onChange({target:{id:'historyYearSelect',value:'2025'}});
+  assert.match(holder.innerHTML, /#1 <span>final place<\/span>/);
+  holder.onChange({target:{id:'historyYearSelect',value:''}});
   select('perSeason');
   assert.equal(History.rank(history,'','perSeason')[0].name, 'Alex');
   assert.equal(History.rank(history,'','perSeason')[0].pointsPerSeason, 130);
   assert.match(holder.innerHTML, /130\.00 <span>pts \/ season<\/span>/);
 });
 
-test('per-season average divides by completed seasons and trophies count wins', () => {
+test('average finish divides placements by completed seasons and sorts lower first', () => {
   const first = History.normalizeSeason(previous,users,oldRosters);
   const second = History.normalizeSeason({...previous,league_id:'older',season:'2024'},users,oldRosters);
   History.scoreSeason(first,[playoff],winners,losers);
@@ -115,8 +120,11 @@ test('per-season average divides by completed seasons and trophies count wins', 
   const alex = History.rank(history,'','perSeason').find(manager => manager.userId === 'a');
   assert.equal(alex.pointsPerSeason, 130);
   assert.equal(alex.completedSeasons, 2);
-  const champions = History.rank(history,'','trophies');
-  assert.deepEqual(champions.map(manager => [manager.name,manager.trophies]), [['Alex',1],['Blair',1]]);
+  const finishRank = History.rank(history,'','averageFinish');
+  assert.deepEqual(finishRank.slice(0,2).map(manager => [manager.name,manager.averageFinish]), [['Alex',1.5],['Blair',1.5]]);
+  assert.deepEqual(History.rank(history,'2024','averageFinish').map(manager => manager.averageFinish), [1,2,3,4]);
+  assert.match(History.markup(history,'','averageFinish'), /1\.50 <span>avg finish<\/span>/);
+  assert.doesNotMatch(History.markup(history,'','averageFinish'), /Trophies|history-trophy/);
 });
 
 test('missing playoff data does not turn regular-season points into a final ranking', async () => {
