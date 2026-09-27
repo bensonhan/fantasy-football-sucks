@@ -13,7 +13,7 @@ test('awards pick the cumulative started-D/ST leader', () => {
   assert.equal(result.juggernaut.name, 'Team A'); // Power score breaks the crown tie.
   const holder = {innerHTML:''};
   Awards.render(holder, teams, key => `<i>${key}</i>`);
-  assert.match(holder.innerHTML, /D Whisperer/);
+  assert.match(holder.innerHTML, /“D” Whisperer/);
   assert.match(holder.innerHTML, /19\.0 started D\/ST points/);
   assert.match(holder.innerHTML, /awardDWhisperer/);
 });

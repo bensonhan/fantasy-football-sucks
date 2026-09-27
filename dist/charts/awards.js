@@ -6,7 +6,7 @@ const AwardsChart = (() => {
     awardEscape:{title:'Escape Artist award',body:'Escape Artist goes to the team with the most wins in weeks when it scored below the league median.',example:'It celebrates victories that most of the league would not have earned.'},
     awardMetronome:{title:'Metronome award',body:'Metronome goes to the team with the smallest standard deviation in weekly scores.',example:'A smaller scoring deviation means a steadier, more predictable team.'},
     awardRollercoaster:{title:'Rollercoaster award',body:'Rollercoaster goes to the team with the largest standard deviation in weekly scores.',example:'A larger scoring deviation means bigger swings between weekly highs and lows.'},
-    awardDWhisperer:{title:'D Whisperer award',body:'D Whisperer goes to the team whose started D/ST defenses have scored the most points across completed weeks.',example:'Only defenses placed in a starting DEF slot count. Bench defense scores do not count.'}
+    awardDWhisperer:{title:'“D” Whisperer award',body:'“D” Whisperer goes to the team whose started D/ST defenses have scored the most points across completed weeks.',example:'Only defenses placed in a starting DEF slot count. Bench defense scores do not count.'}
   };
   function winners(teams) {
     const eligible = sorted(teams).filter(team => team.analytics?.weeklyScores?.length);
@@ -35,7 +35,7 @@ const AwardsChart = (() => {
       ['🥷','Escape Artist','awardEscape',escape,plural(escape.analytics.thiefWins,'below-median win')],
       ['🎯','Metronome','awardMetronome',metronome,`${metronome.analytics.consistency.toFixed(1)}-point scoring deviation`],
       ['🎢','Rollercoaster','awardRollercoaster',rollercoaster,`${rollercoaster.analytics.consistency.toFixed(1)}-point scoring deviation`],
-      ['🛡️','D Whisperer','awardDWhisperer',dWhisperer,dWhisperer ? `${dWhisperer.analytics.defensePoints.toFixed(1)} started D/ST points · ${plural(dWhisperer.analytics.defenseStarts,'start')}` : 'No D/ST starts yet']
+      ['🛡️','“D” Whisperer','awardDWhisperer',dWhisperer,dWhisperer ? `${dWhisperer.analytics.defensePoints.toFixed(1)} started D/ST points · ${plural(dWhisperer.analytics.defenseStarts,'start')}` : 'No D/ST starts yet']
     ];
     return awards.map(([icon, title, key, team, detail]) => `<article class="award-card"><div class="award-icon" aria-hidden="true">${icon}</div><div class="award-title"><span>${title}</span>${infoIcon(key)}</div><div class="award-team" title="${esc(team?.name || '')}">${team ? esc(team.name) : 'Not yet awarded'}</div><div class="award-detail">${detail}</div></article>`).join('');
   }
