@@ -71,7 +71,7 @@ html[data-theme="dark"] .data-table th{color:#98a9b7}html[data-theme="dark"] .da
 .profile-chart-shell .profile-team{font-size:15px}
 .profile-chart-shell .profile-value{font-size:10px}
 .profile-chart-shell .profile-average-value{fill:var(--paper);font-weight:900}
-.profile-chart-shell .profile-league{pointer-events:none;opacity:.42}
+.profile-chart-shell .profile-league{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 7;pointer-events:none;opacity:.28}
 .profile-chart-shell .profile-league-label{paint-order:stroke;stroke:var(--panel2);stroke-width:4px;stroke-linejoin:round}
 @media(max-width:700px){.profile-chart-shell .profile-svg{min-width:760px}}
 

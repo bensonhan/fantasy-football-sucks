@@ -19,6 +19,8 @@ test('profiles sort by average and share a single scoring scale', () => {
   assert.match(holder.innerHTML, /profile-average/);
   assert.equal((holder.innerHTML.match(/profile-frame/g) || []).length, 1);
   assert.equal((holder.innerHTML.match(/profile-league"/g) || []).length, 1);
+  assert.match(holder.innerHTML, /class="profile-league"[^>]+y1="12"[^>]+y2="136"/);
+  assert.ok(holder.innerHTML.lastIndexOf('class="profile-league"') > holder.innerHTML.lastIndexOf('class="profile-chart-row"'));
   assert.doesNotMatch(holder.innerHTML, /profile-chart-legend/);
   assert.doesNotMatch(holder.innerHTML, /<div class="profile-guide"/);
   assert.doesNotMatch(holder.innerHTML, /League avg/);
