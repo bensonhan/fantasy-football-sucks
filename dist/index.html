@@ -10,13 +10,29 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/football-icon-v2.png">
-  <link rel="stylesheet" href="styles.css?v=mobile-heatmap">
+  <link rel="stylesheet" href="styles.css?v=weekly-result-layout">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
       <div class="brand"><img class="brand-ball" src="assets/football-icon-v2.png" alt=""><div class="brand-name">Fantasy Football <span>Sucks</span></div></div>
       <div class="topbar-tools">
+        <div class="section-menu-wrap">
+          <button class="section-menu-toggle" id="sectionMenuToggle" type="button" aria-expanded="false" aria-controls="sectionMenu">
+            <span class="hamburger-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>Sections</span>
+          </button>
+          <nav class="section-menu" id="sectionMenu" aria-label="Page sections" hidden>
+            <a href="#rankings">League Rankings</a>
+            <a href="#awards">League Awards</a>
+            <a href="#heatmap">Scoring Heatmap</a>
+            <a href="#schedule">Schedule Matrix</a>
+            <a href="#profiles">Scoring Profiles</a>
+            <a href="#regret">Trade Regret</a>
+            <a href="#movement">Power Movement</a>
+            <a href="#history">Manager Rankings</a>
+          </nav>
+        </div>
         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
           <span class="theme-icon theme-icon-sun" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg></span>
           <span class="theme-icon theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg></span>
@@ -26,7 +42,7 @@
     <section class="hero">
       <div class="hero-copy"><div class="eyebrow">Your league at a glance</div><h1>Benson’s<br>Stats Sheet</h1><p>The numbers you need to prove your team is better—<strong>and everyone else just got lucky.</strong></p></div>
     </section>
-    <section class="workspace">
+    <section class="workspace" id="rankings">
       <section class="board" aria-labelledby="board-title">
         <div class="section-head"><div><h2 id="board-title">League rankings</h2><p>Highest composite score takes the top spot.</p></div><div class="actions"><button class="btn sleeper" id="sleeperBtn">Sync league</button></div></div>
         <div class="rank-list" id="rankList" aria-live="polite"></div>
@@ -40,31 +56,31 @@
         <div class="sync-meta" id="syncMeta">Sleeper not connected</div><div class="autosave">Saved automatically on this device</div>
       </aside>
     </section>
-    <section class="awards-panel" aria-labelledby="awards-title">
+    <section class="awards-panel" id="awards" aria-labelledby="awards-title">
       <div class="trend-head"><div><h2 id="awards-title">League awards</h2><p>The superlatives your group chat deserves.</p></div><div class="trend-note">Recalculated after every completed week</div></div>
       <div class="awards-strip" id="awardsStrip"></div>
     </section>
-    <section class="trend-panel" aria-labelledby="heatmap-title">
+    <section class="trend-panel" id="heatmap" aria-labelledby="heatmap-title">
       <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week. <span class="heatmap-swipe-hint">Swipe to see all weeks →</span></p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Cold</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>Hot</span></div></div>
       <div class="data-scroll heatmap-scroll" id="scoringHeatmap" role="region" aria-label="Weekly scoring heatmap. Scroll horizontally to see all weeks." tabindex="0"></div>
     </section>
-    <section class="trend-panel" aria-labelledby="schedule-title">
+    <section class="trend-panel" id="schedule" aria-labelledby="schedule-title">
       <div class="trend-head"><div><h2 id="schedule-title">Schedule swap matrix</h2><p>How every team would fare playing each rival’s opponents.</p></div><div class="trend-note">Rows score · columns lend the schedule</div></div>
       <div class="data-scroll" id="scheduleMatrix"></div>
     </section>
-    <section class="trend-panel" aria-labelledby="profiles-title">
+    <section class="trend-panel" id="profiles" aria-labelledby="profiles-title">
       <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league.</p></div><div class="trend-note">All teams · completed weeks</div></div>
       <div class="profile-board" id="scoringProfiles"></div>
     </section>
-    <section class="trend-panel regret-panel" aria-labelledby="regret-title">
+    <section class="trend-panel regret-panel" id="regret" aria-labelledby="regret-title">
       <div class="trend-head"><div><h2 id="regret-title">Trade Regret Analyzer</h2><p>Choose a team and move to compare actual scores with a no-move lineup.</p></div><div class="trend-note" id="regretTeamLabel">Choose a team below</div></div>
       <div id="regretReport" class="regret-report" aria-live="polite"></div>
     </section>
-    <section class="trend-panel" aria-labelledby="trend-title">
+    <section class="trend-panel" id="movement" aria-labelledby="trend-title">
       <div class="trend-head"><div><h2 id="trend-title">Weekly power movement</h2><p>Every team’s weekly rank on one chart.</p></div><div class="trend-note">Hover a path or tap a team to trace it</div></div>
       <div class="shared-movement-board" id="trendChart"></div><div class="shared-movement-legend" id="trendLegend"></div>
     </section>
-    <section class="trend-panel history-panel" aria-labelledby="history-title">
+    <section class="trend-panel history-panel" id="history" aria-labelledby="history-title">
       <div class="trend-head"><div><h2 id="history-title">All-time manager rankings</h2><p>Compare historical rank, total points, average finish, and points per season.</p></div><div class="trend-note">The league's scoring legacy</div></div>
       <div class="history-board" id="managerHistory" aria-live="polite"></div>
     </section>
@@ -72,15 +88,15 @@
   <dialog id="sleeperDialog"><div class="modal-head"><h3>Sync a Sleeper league</h3></div><form class="modal-body" id="sleeperForm"><div class="field"><label for="leagueId">Sleeper league ID</label><input class="text-input" id="leagueId" name="leagueId" required inputmode="numeric" pattern="[0-9]+" autocomplete="off" placeholder="123456789012345678"><div class="field-help">It’s the long number in your Sleeper league URL.</div></div><div class="field-help">Sync analyzes completed weekly matchups, schedules, records, scoring strength, recent form, and playoff outlook.</div><div class="modal-actions"><button class="btn ghost" type="button" id="cancelSleeper">Cancel</button><button class="btn sleeper" type="submit" id="connectBtn">Sync & analyze</button></div></form></dialog>
   <dialog id="infoDialog"><div class="modal-head"><h3 id="infoTitle">How it works</h3></div><div class="modal-body"><p class="info-copy" id="infoBody"></p><div class="info-example" id="infoExample"></div><div class="modal-actions"><button class="btn primary" type="button" id="closeInfo">Got it</button></div></div></dialog>
   <div class="toast" id="toast" role="status"></div>
-  <script src="regret.js"></script>
+  <script src="regret.js?v=no-estimates"></script>
   <script src="charts/utils.js"></script>
   <script src="charts/awards.js"></script>
   <script src="charts/scoring-profiles.js"></script>
   <script src="charts/scoring-heatmap.js"></script>
   <script src="charts/schedule-matrix.js"></script>
   <script src="charts/power-movement.js"></script>
-  <script src="charts/regret-view.js"></script>
+  <script src="charts/regret-view.js?v=no-estimates"></script>
   <script src="charts/manager-history.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=sticky-sections"></script>
 </body>
 </html>

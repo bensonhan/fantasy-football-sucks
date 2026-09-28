@@ -17,9 +17,25 @@ test('regret view keeps team, move, and week selection outside app.js', () => {
   assert.match(holder.innerHTML, /regretWeekSelect/);
   assert.match(holder.innerHTML, /Win → Loss/);
   assert.equal((holder.innerHTML.match(/class="regret-week-card"/g) || []).length, 1);
+  assert.match(holder.innerHTML, /<p class="regret-method">With-move points/);
+  assert.doesNotMatch(holder.innerHTML, /<details class="regret-method">/);
+  assert.match(holder.innerHTML, /<small>Actual<\/small>/);
+  assert.match(holder.innerHTML, /<small>No move<\/small>/);
+  assert.match(holder.innerHTML, /regret-comparison is-negative/);
+  assert.match(holder.innerHTML, /regret-week-section is-negative/);
+  assert.match(holder.innerHTML, /for="regretWeekSelect">Show<select/);
   holder.onChange({target:{id:'regretWeekSelect',value:'2'}});
   assert.match(holder.innerHTML, /<h4>Week 2<\/h4>/);
+  assert.match(holder.innerHTML, /regret-week-section is-positive/);
   assert.doesNotMatch(holder.innerHTML, /Win → Loss/);
+});
+
+test('regret comparison uses a positive treatment when the move helped', () => {
+  const holder = {innerHTML:'',addEventListener(){}};
+  const label = {textContent:''};
+  const move = {id:'waiver-1',rosterId:1,type:'waiver',week:2,title:'Added a winner',receivedNames:['Winner'],sentNames:[],faab:[],picks:[],impact:8,winChange:1,rows:[{week:2,withPoints:118,withoutPoints:110,opponentPoints:114,impact:8}]};
+  RegretView.create(holder,label).render({teams:[{id:'a',name:'Team A',sleeperRosterId:1,analytics:{powerScore:50}}],regretByRoster:{1:[move]},regretError:'',regretLoaded:true,isSyncing:false,selected:'a'});
+  assert.match(holder.innerHTML, /regret-comparison is-positive/);
 });
 
 test('regret view has an empty state', () => {

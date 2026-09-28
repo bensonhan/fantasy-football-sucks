@@ -103,10 +103,9 @@ const Regret = (() => {
           const alternative = new Set([...actual].filter(id => !movement.received.includes(id)));
           movement.sent.forEach(id => alternative.add(id));
           const leaguePoints = Object.assign({}, ...week.entries.map(item => item.players_points || {}));
-          const fallback = statsByWeek[week.week], needed = [...alternative].filter(id => !(id in leaguePoints));
-          if (needed.length && !fallback) { rows.push({week: week.week, incomplete: true}); continue; }
+          const needed = [...alternative].filter(id => !(id in leaguePoints));
+          if (needed.length) { rows.push({week: week.week, incomplete: true, reason: 'no_data'}); continue; }
           const points = {...leaguePoints};
-          needed.forEach(id => { points[id] = scoreStats(fallback?.[id], league.scoring_settings); });
           const comparison = noMoveLineup(entry, movement, points, slots, players);
           if (!comparison) { rows.push({week: week.week, incomplete: true}); continue; }
           const opponent = week.entries.find(item => item.matchup_id != null && item.matchup_id === entry.matchup_id && Number(item.roster_id) !== rosterId);
@@ -115,7 +114,7 @@ const Regret = (() => {
           const withoutResult = opponentPoints == null ? null : Math.sign(comparison.withoutPoints - opponentPoints);
           rows.push({week: week.week, impact: decimals(comparison.withPoints - comparison.withoutPoints),
             ...comparison, opponentPoints,
-            estimated: needed.length > 0, winChange: actualResult == null ? 0 : (actualResult - withoutResult) / 2});
+            estimated: false, winChange: actualResult == null ? 0 : (actualResult - withoutResult) / 2});
         }
         const scored = rows.filter(row => !row.incomplete);
         const result = {id: `${tx.transaction_id}-${rosterId}`, rosterId, type: tx.type, title: movement.title,
@@ -161,13 +160,7 @@ const Regret = (() => {
       getPlayers()
     ]);
     const transactions = [...new Map(transactionsByWeek.flat().filter(Boolean).map(tx => [tx.transaction_id, tx])).values()];
-    const statsByWeek = {};
-    const relevantWeeks = weeks.filter(week => week.week < currentWeek && week.entries.length);
-    await Promise.all(relevantWeeks.map(async week => {
-      try { statsByWeek[week.week] = await get(`stats/nfl/regular/${league.season}/${week.week}`); }
-      catch (error) { console.warn('Weekly player stats unavailable', week.week, error); }
-    }));
-    return analyze({transactions, weeks, statsByWeek, players, league, currentWeek});
+    return analyze({transactions, weeks, statsByWeek: {}, players, league, currentWeek});
   }
   return {analyze, load, playerName, bestLineup, scoreStats};
 })();

@@ -28,7 +28,7 @@ test('trade hindsight compares legal lineups and matchup outcomes', () => {
   assert.equal(result.rows[0].opponentPoints, 25);
 });
 
-test('unrostered dropped player uses league settings and marks result estimated', () => {
+test('unrostered dropped player is excluded instead of estimated', () => {
   const transactions = [{status: 'complete', type: 'waiver', transaction_id: 'waiver-1', leg: 1,
     roster_ids: [1], adds: {W: 1}, drops: {D: 1}, status_updated: 1}];
   const weeks = [{week: 1, entries: [
@@ -36,8 +36,10 @@ test('unrostered dropped player uses league settings and marks result estimated'
     {roster_id: 2, matchup_id: 1, players: [], players_points: {}, points: 20}
   ]}];
   const result = Regret.analyze({transactions, weeks, statsByWeek: {1: {D: {rush_yd: 120}}}, players, league, currentWeek: 2}).get(1)[0];
-  assert.equal(result.impact, -7);
-  assert.equal(result.estimated, true);
+  assert.equal(result.impact, 0);
+  assert.equal(result.estimated, false);
+  assert.equal(result.incomplete, true);
+  assert.deepEqual(result.rows[0], {week: 1, incomplete: true, reason: 'no_data'});
 });
 
 test('an added player can fill a slot that would otherwise stay empty', () => {

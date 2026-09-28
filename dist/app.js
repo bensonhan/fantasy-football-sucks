@@ -5,9 +5,15 @@ let regretByRoster=loadRegret(),regretError='',regretLoaded=hasCachedRegret();
 let managerHistory=ManagerHistory.readCache(sleeperConnection?.leagueId);
 const $=s=>document.querySelector(s), rankList=$('#rankList'), editor=$('#editor');
 const themeToggle=$('#themeToggle');
+const sectionMenuToggle=$('#sectionMenuToggle'),sectionMenu=$('#sectionMenu');
 function setTheme(theme,{persist=true}={}){const dark=theme==='dark';document.documentElement.dataset.theme=dark?'dark':'light';themeToggle.setAttribute('aria-pressed',String(dark));themeToggle.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');themeToggle.title=dark?'Switch to light mode':'Switch to dark mode';if(persist){try{localStorage.setItem('power-board-theme',dark?'dark':'light')}catch{}}}
 setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light',{persist:false});
 themeToggle.addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+function setSectionMenu(open){sectionMenu.hidden=!open;sectionMenuToggle.setAttribute('aria-expanded',String(open));document.body.classList.toggle('section-menu-open',open)}
+sectionMenuToggle.addEventListener('click',event=>{event.stopPropagation();setSectionMenu(sectionMenu.hidden)});
+sectionMenu.addEventListener('click',event=>{if(event.target.closest('a'))setSectionMenu(false)});
+document.addEventListener('click',event=>{if(!event.target.closest('.section-menu-wrap'))setSectionMenu(false)});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!sectionMenu.hidden){setSectionMenu(false);sectionMenuToggle.focus()}});
 function load(){try{const saved=JSON.parse(localStorage.getItem('power-board-teams'));return Array.isArray(saved)&&saved.every(team=>team?.sleeperRosterId!=null)?saved:[]}catch{return []}}
 function loadSleeper(){try{return JSON.parse(localStorage.getItem('power-board-sleeper'))||null}catch{return null}}
 function loadRegret(){try{const saved=JSON.parse(localStorage.getItem('power-board-regret'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===REGRET_CACHE_VERSION?saved.rows||{}:{}}catch{return {}}}
@@ -25,7 +31,7 @@ function render(){
     renderSyncMeta();save();return;
   }
   if(!teams.some(t=>t.id===selected))selected=list[0].id;
-  rankList.innerHTML=list.map((t,i)=>{const rank=i+1,diff=t.prev-rank,move=diff>0?`▲ ${diff}`:diff<0?`▼ ${Math.abs(diff)}`:'—',record=`${t.wins}-${t.losses}${t.ties?`-${t.ties}`:''}`,a=t.analytics;const metrics=a?`<div class="metric"><span>Expected W ${infoIcon('expectedWins')}</span><b>${a.expectedWins.toFixed(2)}</b></div><div class="metric"><span>Avg rank ${infoIcon('avgRank')}</span><b>${a.avgWeeklyRank.toFixed(1)}</b></div><div class="metric"><span>Luck ${infoIcon('luck')}</span><b>${signed(a.luck)}</b></div>`:'';return `<article class="rank-row ${i===0?'top':''}" tabindex="0" data-id="${t.id}" aria-label="Rank ${rank}, ${esc(t.name)}, score ${score(t).toFixed(1)}"><div class="rank-num">${String(rank).padStart(2,'0')}</div><div class="team-cell"><div class="team-name">${esc(t.name)}</div><div class="owner">${esc(t.owner)} · ${record}</div></div><div class="metrics">${metrics}</div><div class="score"><strong>${score(t).toFixed(1)}</strong><span>Power score ${infoIcon('powerScore')}</span></div><div class="move ${diff>0?'up':diff<0?'down':'same'}">${move}</div></article>`}).join('');
+  rankList.innerHTML=list.map((t,i)=>{const rank=i+1,diff=t.prev-rank,move=diff>0?`▲ ${diff}`:diff<0?`▼ ${Math.abs(diff)}`:'—',record=`${t.wins}-${t.losses}${t.ties?`-${t.ties}`:''}`,a=t.analytics;const metrics=a?`<div class="metric"><span>Expected W ${infoIcon('expectedWins')}</span><b>${a.expectedWins.toFixed(2)}</b></div><div class="metric"><span>Avg rank ${infoIcon('avgRank')}</span><b>${a.avgWeeklyRank.toFixed(1)}</b></div><div class="metric"><span>Luck ${infoIcon('luck')}</span><b>${signed(a.luck)}</b></div>`:'';return `<article class="rank-row" tabindex="0" data-id="${t.id}" aria-label="Rank ${rank}, ${esc(t.name)}, score ${score(t).toFixed(1)}"><div class="rank-num">${String(rank).padStart(2,'0')}</div><div class="team-cell"><div class="team-name">${esc(t.name)}</div><div class="owner">${esc(t.owner)} · ${record}</div></div><div class="metrics">${metrics}</div><div class="score"><strong>${score(t).toFixed(1)}</strong><span>Power score ${infoIcon('powerScore')}</span></div><div class="move ${diff>0?'up':diff<0?'down':'same'}">${move}</div></article>`}).join('');
   rankList.querySelectorAll('.rank-row').forEach(el=>{el.addEventListener('click',()=>{selected=el.dataset.id;renderEditor()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selected=el.dataset.id;renderEditor()}})});
   renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderTrendChart();renderManagerHistory();
   renderSyncMeta();save();
