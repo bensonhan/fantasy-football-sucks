@@ -1,5 +1,5 @@
 const DEFAULT_SLEEPER_LEAGUE_ID='1389375528988852224',REGRET_CACHE_VERSION=5;
-const AUTO_SYNC_DAYS=new Set([0,1,4]),AUTO_SYNC_MAX_AGE_MS=60*60*1000;
+const AUTO_SYNC_MAX_AGE_MS=24*60*60*1000;
 let teams=load(); let selected=teams[0]?.id; let sleeperConnection=loadSleeper(); let isSyncing=false;
 let regretByRoster=loadRegret(),regretError='',regretLoaded=hasCachedRegret();
 let managerHistory=ManagerHistory.readCache(sleeperConnection?.leagueId);
@@ -69,7 +69,7 @@ function renderScoringProfiles(){ScoringProfilesChart.render($('#scoringProfiles
 function renderScoringHeatmap(){ScoringHeatmapChart.render($('#scoringHeatmap'),teams)}
 function renderScheduleMatrix(){ScheduleMatrixChart.render($('#scheduleMatrix'),teams)}
 function renderTrendChart(){PowerMovementChart.render($('#trendChart'),$('#trendLegend'),teams)}
-function renderSyncMeta(){const el=$('#syncMeta');if(!sleeperConnection){el.textContent=isSyncing?'Connecting to Sleeper…':'Sleeper not connected';$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Sync league';return}const when=new Date(sleeperConnection.syncedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});el.innerHTML=`<span><strong>${esc(sleeperConnection.leagueName)}</strong><br>Last synced ${when} · Auto-checks Thu, Sun &amp; Mon</span>`;$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Switch league'}
+function renderSyncMeta(){const el=$('#syncMeta');if(!sleeperConnection){el.textContent=isSyncing?'Connecting to Sleeper…':'Sleeper not connected';$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Sync league';return}const when=new Date(sleeperConnection.syncedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});el.innerHTML=`<span><strong>${esc(sleeperConnection.leagueName)}</strong><br>Last synced ${when} · Auto-checks daily</span>`;$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Switch league'}
 $('#sleeperBtn').onclick=()=>{$('#leagueId').value=sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID;$('#sleeperDialog').showModal();setTimeout(()=>{$('#leagueId').focus();$('#leagueId').select()},50)};$('#cancelSleeper').onclick=()=>$('#sleeperDialog').close();$('#sleeperForm').onsubmit=async e=>{e.preventDefault();await syncSleeper(new FormData(e.currentTarget).get('leagueId'))};
 async function sleeperGet(path){const response=await fetch(`https://api.sleeper.app/v1/${path}`);if(!response.ok)throw new Error(response.status===404?'League not found. Double-check the league ID.':'Sleeper is unavailable right now. Try again shortly.');return response.json()}
 async function syncSleeper(rawId){
@@ -170,7 +170,7 @@ function gameLabel(game){if(!game)return 'Not enough data';return `Week ${game.w
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.classList.remove('show'),2200)}
 document.addEventListener('click',event=>{const btn=event.target.closest('.info-btn');if(!btn)return;event.preventDefault();event.stopPropagation();openMetricInfo(btn.dataset.info)});$('#closeInfo').onclick=()=>$('#infoDialog').close();
 function registerWebMCP(){const c=document.modelContext;if(!c?.registerTool)return;try{c.registerTool({name:'get_power_rankings',title:'Get power rankings',description:'Return the current ordered fantasy football power rankings and scores.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute:()=>({rankings:sorted().map((t,i)=>({rank:i+1,team:t.name,manager:t.owner,score:Number(score(t).toFixed(1))}))})})}catch(e){console.warn('WebMCP unavailable',e)}}
-function shouldAutoSync(now=new Date()){if(!sleeperConnection?.leagueId||!AUTO_SYNC_DAYS.has(now.getDay()))return false;const lastSync=Date.parse(sleeperConnection.syncedAt);return !Number.isFinite(lastSync)||now.getTime()-lastSync>=AUTO_SYNC_MAX_AGE_MS}
+function shouldAutoSync(now=new Date()){if(!sleeperConnection?.leagueId)return false;const lastSync=Date.parse(sleeperConnection.syncedAt);return !Number.isFinite(lastSync)||now.getTime()-lastSync>=AUTO_SYNC_MAX_AGE_MS}
 const needsAnalyticsRefresh=teams.some(t=>!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank)||!Number.isFinite(t.analytics?.defensePoints)||!Number.isFinite(t.analytics?.defenseStarts));
 const needsRegretRefresh=Boolean(sleeperConnection?.leagueId)&&!regretLoaded;
 const needsHistoryRefresh=Boolean(sleeperConnection?.leagueId)&&!managerHistory;

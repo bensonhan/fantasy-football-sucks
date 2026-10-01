@@ -42,15 +42,21 @@ const ScheduleMatrixChart = (() => {
     const rows = sorted(teams).filter(team => team.analytics?.scheduleRecords);
     if (!rows.length) return '<div class="chart-empty">Sync a Sleeper league to calculate schedule swaps.</div>';
     const header = rows.map(team => `<th scope="col" title="${esc(team.name)}">${esc(shortName(team.name))}</th>`).join('');
-    const body = rows.map(team => `<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${rows.map(scheduleTeam => {
-      const record = team.analytics.scheduleRecords[scheduleTeam.sleeperRosterId];
-      if (!record) return '<td class="matrix-cell">—</td>';
-      const text = `${record.wins}-${record.losses}${record.ties ? `-${record.ties}` : ''}`;
-      const actual = team.sleeperRosterId === scheduleTeam.sleeperRosterId;
-      const klass = actual ? 'matrix-actual' : record.wins > record.losses ? 'matrix-good' : record.losses > record.wins ? 'matrix-bad' : '';
-      return `<td class="matrix-cell ${klass}" title="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${text}" aria-label="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${record.wins} wins, ${record.losses} losses${record.ties ? `, ${record.ties} ties` : ''}">${text}</td>`;
-    }).join('')}</tr>`).join('');
-    return `<table class="data-table schedule-table"><thead><tr><th scope="col">Scoring team</th>${header}</tr></thead><tbody>${body}</tbody></table><p class="table-note">Outlined cells are actual records. When two swapped teams originally faced each other, they remain opponents for that week.</p>`;
+    const body = rows.map(team => {
+      const actualRecord = team.analytics.scheduleRecords[team.sleeperRosterId];
+      const actualScore = actualRecord ? actualRecord.wins + (actualRecord.ties * .5) : null;
+      return `<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${rows.map(scheduleTeam => {
+        const record = team.analytics.scheduleRecords[scheduleTeam.sleeperRosterId];
+        if (!record) return '<td class="matrix-cell">—</td>';
+        const text = `${record.wins}-${record.losses}${record.ties ? `-${record.ties}` : ''}`;
+        const actual = team.sleeperRosterId === scheduleTeam.sleeperRosterId;
+        const swappedScore = record.wins + (record.ties * .5);
+        const comparisonClass = actualScore == null || swappedScore === actualScore ? 'matrix-same' : swappedScore > actualScore ? 'matrix-good' : 'matrix-bad';
+        const klass = `${comparisonClass}${actual ? ' matrix-actual' : ''}`;
+        return `<td class="matrix-cell ${klass}" title="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${text}" aria-label="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${record.wins} wins, ${record.losses} losses${record.ties ? `, ${record.ties} ties` : ''}">${text}</td>`;
+      }).join('')}</tr>`;
+    }).join('');
+    return `<table class="data-table schedule-table"><thead><tr><th scope="col">Scoring team</th>${header}</tr></thead><tbody>${body}</tbody></table><p class="table-note">Green improves on the team's actual record, red is worse, and gray is the same. Outlined cells are actual records. When two swapped teams originally faced each other, they remain opponents for that week.</p>`;
   }
   function render(holder, teams) { holder.innerHTML = markup(teams); }
   return {buildRecords, markup, render};

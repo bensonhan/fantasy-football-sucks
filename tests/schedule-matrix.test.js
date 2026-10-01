@@ -20,3 +20,24 @@ test('schedule swap records use the borrowed opponent and preserve actual record
 });
 
 test('schedule matrix has an empty state', () => assert.match(Matrix.markup([]), /Sync a Sleeper league/));
+
+test('schedule matrix colors swapped records relative to the actual record', () => {
+  const teams = [
+    {name:'Alpha',sleeperRosterId:1,analytics:{powerScore:3,scheduleRecords:{
+      1:{wins:5,losses:3,ties:0},
+      2:{wins:6,losses:2,ties:0},
+      3:{wins:4,losses:3,ties:2}
+    }}},
+    {name:'Bravo',sleeperRosterId:2,analytics:{powerScore:2,scheduleRecords:{
+      1:{wins:3,losses:5,ties:0}, 2:{wins:4,losses:4,ties:0}, 3:{wins:2,losses:6,ties:0}
+    }}},
+    {name:'Charlie',sleeperRosterId:3,analytics:{powerScore:1,scheduleRecords:{
+      1:{wins:4,losses:4,ties:0}, 2:{wins:5,losses:3,ties:0}, 3:{wins:6,losses:2,ties:0}
+    }}}
+  ];
+  const html = Matrix.markup(teams);
+  assert.match(html, /class="matrix-cell matrix-same matrix-actual"[^>]*Alpha with Alpha's schedule/);
+  assert.match(html, /class="matrix-cell matrix-good"[^>]*Alpha with Bravo's schedule/);
+  assert.match(html, /class="matrix-cell matrix-same"[^>]*Alpha with Charlie's schedule/);
+  assert.match(html, /class="matrix-cell matrix-bad"[^>]*Bravo with Alpha's schedule/);
+});
