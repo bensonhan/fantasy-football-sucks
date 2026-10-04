@@ -16,6 +16,9 @@ test('schedule swap records use the borrowed opponent and preserve actual record
   const holder = {innerHTML:''};
   Matrix.render(holder, teams);
   assert.match(holder.innerHTML, /matrix-actual/);
+  assert.match(holder.innerHTML, /class="data-row-bubble">Team 1<\/span>/);
+  assert.match(holder.innerHTML, /class="data-corner-bubble">Scoring team<\/span>/);
+  assert.match(holder.innerHTML, /class="data-header-bubble">Team 1<\/span>/);
   assert.match(holder.innerHTML, /with Team 1's schedule/);
 });
 

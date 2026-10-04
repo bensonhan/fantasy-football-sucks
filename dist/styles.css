@@ -126,9 +126,9 @@ html[data-theme="dark"]{--series-0:#ff9969;--series-1:#ad9aff;--series-2:#67d0d3
 .section-menu-wrap{position:relative}.section-menu-toggle{display:flex;align-items:center;gap:7px;min-height:34px;padding:0 11px;border:1px solid #3f8fc7;border-radius:9px;background:#3f8fc7;color:#fff;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.045em;box-shadow:0 5px 14px rgba(11,39,66,.14);transition:transform .18s,background-color .18s,border-color .18s}.section-menu-toggle:hover{transform:translateY(-1px);background:#2774ae;border-color:#2774ae}.section-menu-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--orange) 34%,transparent);outline-offset:2px}.section-menu-toggle[aria-expanded="true"]{background:#1d628f;border-color:#1d628f}
 .hamburger-icon{display:grid;gap:3px;width:18px}.hamburger-icon i{display:block;width:18px;height:2px;border-radius:99px;background:currentColor;transition:transform .18s,opacity .18s}.section-menu-toggle[aria-expanded="true"] .hamburger-icon i:first-child{transform:translateY(5px) rotate(45deg)}.section-menu-toggle[aria-expanded="true"] .hamburger-icon i:nth-child(2){opacity:0}.section-menu-toggle[aria-expanded="true"] .hamburger-icon i:last-child{transform:translateY(-5px) rotate(-45deg)}
 .section-menu{position:absolute;top:calc(100% + 9px);right:0;display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));width:max-content;max-width:min(520px,calc(100vw - 30px));padding:9px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(11,39,66,.22)}.section-menu[hidden]{display:none}.section-menu a{display:flex;align-items:center;min-height:44px;padding:10px 13px;border-radius:9px;color:var(--paper);font-size:.82rem;font-weight:750;text-decoration:none}.section-menu a:hover{background:color-mix(in srgb,var(--orange) 10%,var(--panel));color:var(--orange)}.section-menu a:focus-visible{outline:3px solid color-mix(in srgb,var(--orange) 30%,transparent);outline-offset:-2px}
-#rankings,#awards,#heatmap,#schedule,#profiles,#regret,#movement,#history{scroll-margin-top:62px}
+#rankings,#awards,#heatmap,#schedule,#profiles,#draft,#regret,#movement,#history{scroll-margin-top:62px}
 html[data-theme="dark"] .topbar{background:color-mix(in srgb,var(--ink) 88%,transparent)}html[data-theme="dark"] .section-menu-toggle{background:#0b2742;border-color:#35536f}html[data-theme="dark"] .section-menu-toggle:hover{background:#123b61;border-color:var(--orange)}html[data-theme="dark"] .section-menu-toggle[aria-expanded="true"]{background:var(--orange);border-color:var(--orange)}html[data-theme="dark"] .section-menu{box-shadow:0 18px 50px rgba(0,0,0,.48)}
-@media(max-width:620px){.topbar{margin:-10px -4px 0;padding:4px 4px 5px}.topbar .brand{gap:5px}.topbar .brand-ball{width:31px;height:28px}.topbar .brand-name{max-width:170px;font-size:1.05rem}.topbar-tools{gap:6px}.topbar .theme-toggle{width:34px;height:34px}.section-menu-toggle{width:34px;min-height:34px;padding:0;justify-content:center;border-radius:50%}.section-menu-toggle>span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.section-menu{position:fixed;top:48px;left:12px;right:12px;grid-template-columns:1fr;width:auto;max-height:calc(100vh - 62px);padding:8px;overflow-y:auto}.section-menu a{min-height:48px;padding:11px 14px;border-bottom:1px solid var(--line);border-radius:7px;font-family:Barlow Condensed,sans-serif;font-size:1.08rem;text-transform:uppercase}.section-menu a:last-child{border-bottom:0}#rankings,#awards,#heatmap,#schedule,#profiles,#regret,#movement,#history{scroll-margin-top:56px}}
+@media(max-width:620px){.topbar{margin:-10px -4px 0;padding:4px 4px 5px}.topbar .brand{gap:5px}.topbar .brand-ball{width:31px;height:28px}.topbar .brand-name{max-width:170px;font-size:1.05rem}.topbar-tools{gap:6px}.topbar .theme-toggle{width:34px;height:34px}.section-menu-toggle{width:34px;min-height:34px;padding:0;justify-content:center;border-radius:50%}.section-menu-toggle>span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.section-menu{position:fixed;top:48px;left:12px;right:12px;grid-template-columns:1fr;width:auto;max-height:calc(100vh - 62px);padding:8px;overflow-y:auto}.section-menu a{min-height:48px;padding:11px 14px;border-bottom:1px solid var(--line);border-radius:7px;font-family:Barlow Condensed,sans-serif;font-size:1.08rem;text-transform:uppercase}.section-menu a:last-child{border-bottom:0}#rankings,#awards,#heatmap,#schedule,#profiles,#draft,#regret,#movement,#history{scroll-margin-top:56px}}
 
 /* Compact trade-regret analyzer: keep the detail, reduce repeated framing and vertical travel. */
 .regret-panel .trend-head{padding-block:16px 12px}.regret-report{padding:14px 20px 18px}.regret-chooser{grid-template-columns:minmax(180px,.72fr) minmax(320px,1.28fr);gap:10px;padding:10px 12px}.regret-chooser label{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}.regret-chooser select{margin-top:0;padding:8px 10px}.regret-detail-page{margin-top:10px}.regret-detail-head{align-items:center;gap:14px;padding:14px 16px}.regret-detail-head h3{margin:3px 0 6px;font-size:clamp(1.35rem,2.4vw,1.85rem)}.regret-detail-head p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.regret-detail-head p b{color:var(--paper);font-size:.66rem;text-transform:uppercase;letter-spacing:.06em}.regret-impact-tile{flex-basis:180px;padding:10px 13px}.regret-impact-tile strong{margin:3px 0;font-size:1.72rem}.regret-comparison{gap:0;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);overflow:hidden}.regret-comparison>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 10px;padding:10px 14px;border:0;border-right:1px solid var(--line);border-radius:0;background:transparent}.regret-comparison>div:last-child{border-right:0}.regret-comparison small{grid-column:1}.regret-comparison strong{grid-column:2;grid-row:1/3;margin:0;font-size:1.55rem;text-align:right}.regret-comparison p{grid-column:1;margin-top:2px}.regret-week-section{display:grid;grid-template-columns:175px minmax(0,1fr);gap:10px;margin-top:10px}.regret-week-toolbar{display:block;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}.regret-week-toolbar h4{font-size:1.08rem}.regret-week-toolbar label{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;margin-top:7px}.regret-week-toolbar select{min-width:0;width:100%;margin:0;padding:7px 8px}.regret-week-card{display:grid;grid-template-columns:minmax(92px,.65fr) repeat(2,minmax(88px,.5fr)) minmax(170px,1.2fr);align-items:center;gap:12px;padding:10px 14px}.regret-week-head{display:block}.regret-week-head h4{font-size:1rem}.regret-week-head>strong{display:block;margin-top:2px}.regret-week-scores{display:contents}.regret-week-scores span{padding:7px 9px}.regret-week-scores b{font-size:1.18rem}.regret-week-card p{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1px 10px;margin:0;padding-left:4px}.regret-week-card p small{color:var(--muted);font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.regret-week-card p strong{font-size:.83rem}.regret-week-card p span{grid-column:2;color:var(--muted);font-size:.66rem}.regret-estimate{grid-column:1/-1;margin:0}.regret-method{max-width:none;margin:9px 2px 0;font-size:.7rem}.regret-method summary{width:max-content;color:var(--muted);cursor:pointer;font-weight:750}.regret-method summary:hover{color:var(--orange)}.regret-method p{max-width:950px;margin:7px 0 0;line-height:1.5}
@@ -150,3 +150,111 @@ html[data-theme="dark"] .topbar{background:color-mix(in srgb,var(--ink) 88%,tran
 /* Schedule swaps are colored relative to each team's actual record. */
 .matrix-same,.matrix-cell.matrix-actual{background:#edf0ef;color:#4e5a64}
 html[data-theme="dark"] .matrix-same,html[data-theme="dark"] .matrix-cell.matrix-actual{background:#263847;color:#cbd7df}
+
+/* Draft board */
+.draft-legend{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 14px;color:var(--muted);font-size:.69rem;font-weight:700}.draft-legend span{display:flex;align-items:center;gap:6px}.draft-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}.draft-legend-green{background:#cdebdc}.draft-legend-red{background:#f3d7d5}
+.draft-board-scroll{overflow:auto;max-height:660px;padding:16px 18px 20px;overscroll-behavior-inline:contain}.draft-board-table{width:100%;min-width:max-content;border-collapse:separate;border-spacing:5px;table-layout:fixed}.draft-board-table caption{text-align:left;color:var(--muted);font-size:.72rem;font-weight:700;padding:0 5px 7px}.draft-board-table th{color:var(--muted);font-size:.68rem;font-weight:800;text-align:left;vertical-align:middle}.draft-board-table thead th{position:sticky;top:-16px;z-index:2;min-width:145px;max-width:145px;padding:8px 9px;background:var(--panel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.draft-board-table thead th:first-child,.draft-board-table tbody th{position:sticky;left:0;z-index:3;min-width:82px;max-width:82px;padding:8px;background:var(--panel)}.draft-board-table thead th:first-child{z-index:4}.draft-board-table td{width:145px;min-width:145px;max-width:145px;vertical-align:top}.draft-pick{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:60px;margin-bottom:5px;padding:8px 9px;border:1px solid transparent;border-radius:8px;outline:none;cursor:default}.draft-pick:last-child{margin-bottom:0}.draft-retained{background:#d9eee3;border-color:#acd9bf;color:#125236}.draft-departed{background:#f6dfdd;border-color:#e7b7b3;color:#7c2825}.draft-pick-name{display:block;font-size:.72rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}.draft-pick-meta{display:block;margin-top:4px;font-size:.6rem;font-weight:700;opacity:.75}.draft-pick:hover,.draft-pick:focus-visible{z-index:5;box-shadow:0 0 0 2px var(--orange)}.draft-tooltip{position:absolute;left:50%;bottom:calc(100% + 8px);z-index:8;display:none;min-width:155px;padding:10px 12px;border-radius:9px;background:#0b2742;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.22);font-size:.7rem;line-height:1.5;transform:translateX(-50%);pointer-events:none}.draft-pick-top .draft-tooltip{top:calc(100% + 8px);bottom:auto}.draft-tooltip strong,.draft-tooltip span{display:block;white-space:nowrap}.draft-tooltip strong{margin-bottom:4px}.draft-pick:hover .draft-tooltip,.draft-pick:focus-visible .draft-tooltip{display:block}.draft-no-pick{display:block;min-height:60px;padding:20px 10px;color:var(--muted);text-align:center}.draft-method{margin:0;padding:0 24px 18px;color:var(--muted);font-size:.7rem}
+html[data-theme="dark"] .draft-retained,html[data-theme="dark"] .draft-legend-green{background:#193d32;border-color:#327452;color:#a8e6c3}html[data-theme="dark"] .draft-departed,html[data-theme="dark"] .draft-legend-red{background:#482a2d;border-color:#8b4948;color:#ffb8b3}html[data-theme="dark"] .draft-tooltip{background:#eef4f9;color:#0b2742}
+@media(max-width:620px){#draft .trend-head{align-items:start;flex-direction:column}.draft-legend{justify-content:flex-start}.draft-board-scroll{padding:10px 6px 16px}.draft-method{padding:0 14px 16px}}
+.draft-board-table thead th small{display:block;margin-bottom:3px;color:var(--orange);font-size:.58rem;text-transform:uppercase;letter-spacing:.06em}
+.draft-pick.draft-departed{background:#d8dde2;border-color:#b9c2ca;color:#34424d}
+.draft-left-label{align-self:flex-start;margin-top:5px;padding:2px 5px;border-radius:4px;background:#667784;color:#fff;font-size:.56rem;font-weight:800;line-height:1.2;text-transform:uppercase;letter-spacing:.04em}
+.draft-pick.draft-ungraded{background:var(--panel2);border-color:var(--line);color:var(--paper)}
+.draft-legend .draft-legend-gray{background:#d8dde2;border:1px solid #b9c2ca}
+html[data-theme="dark"] .draft-pick.draft-departed{background:#46535e;border-color:#73818d;color:#f0f4f7}
+html[data-theme="dark"] .draft-legend .draft-legend-gray{background:#46535e;border-color:#73818d}
+html[data-theme="dark"] .draft-left-label{background:#d3dce3;color:#253440}
+.draft-board-table thead th:first-child,.draft-board-table tbody th,.data-table th:first-child{border:0;border-radius:0;box-shadow:inset -1px 0 0 var(--line)}
+.draft-board-table{border-spacing:5px 0}.data-table{border-spacing:4px 0}
+.data-table .heat-cell,.data-table .matrix-cell{border-bottom:4px solid var(--panel)}
+.draft-board-table td{position:relative;height:102px;padding:3px}
+.draft-cell{position:relative;height:96px;min-height:96px}
+.draft-pick{height:78px;min-height:78px;margin-bottom:5px;padding:7px 8px}
+.draft-pick-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.draft-pick-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-no-pick{min-height:78px}
+.draft-cell-multi{overflow:hidden}
+.draft-more{position:absolute;right:0;bottom:0;left:0;display:block;height:17px;background:var(--panel);color:var(--muted);font-size:.62rem;font-weight:800;text-align:center}
+.draft-cell-multi:hover,.draft-cell-multi:focus-within{position:absolute;top:3px;right:3px;left:3px;z-index:10;height:auto;min-height:96px;padding-bottom:16px;overflow:visible;border-radius:8px;background:var(--panel);box-shadow:0 10px 26px rgba(11,39,66,.2)}
+.draft-board-table tbody tr:nth-last-child(-n+2) .draft-cell-multi:hover,.draft-board-table tbody tr:nth-last-child(-n+2) .draft-cell-multi:focus-within{top:auto;bottom:3px}
+.draft-cell-multi:hover .draft-more,.draft-cell-multi:focus-within .draft-more{display:none}
+html[data-theme="dark"] .draft-cell-multi:hover,html[data-theme="dark"] .draft-cell-multi:focus-within{box-shadow:0 10px 26px rgba(0,0,0,.45)}
+.draft-board-table{border-spacing:5px}.data-table{border-spacing:4px}
+.data-table .heat-cell,.data-table .matrix-cell{border-bottom:0}
+.draft-board-table thead th:first-child,.draft-board-table tbody th,.data-table th:first-child{border:1px solid var(--line);border-radius:9px;box-shadow:4px 0 10px rgba(11,39,66,.11)}
+html[data-theme="dark"] .draft-board-table thead th:first-child,html[data-theme="dark"] .draft-board-table tbody th,html[data-theme="dark"] .data-table th:first-child{box-shadow:4px 0 10px rgba(0,0,0,.3)}
+.draft-board-table thead th:first-child,.draft-board-table tbody th{width:145px;min-width:145px;max-width:145px;border:0;border-radius:0;box-shadow:none}
+.draft-board-table tbody th{padding:3px;vertical-align:top}
+.draft-round-bubble{display:flex;align-items:center;width:100%;height:78px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.draft-no-pick{height:78px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+html[data-theme="dark"] .draft-board-table thead th:first-child,html[data-theme="dark"] .draft-board-table tbody th{box-shadow:none}
+.draft-board-table td{height:84px}
+.draft-cell{height:78px;min-height:78px}
+.draft-cell-multi .draft-pick:first-child{padding-bottom:20px}
+.draft-more{bottom:0;height:17px;border-radius:0 0 8px 8px}
+.draft-cell-multi:hover,.draft-cell-multi:focus-within{min-height:78px}
+.draft-left-label.draft-left-dropped,html[data-theme="dark"] .draft-left-label.draft-left-dropped{background:#b42332;color:#fff}
+.draft-left-label.draft-left-traded,html[data-theme="dark"] .draft-left-label.draft-left-traded{background:#6941a5;color:#fff}
+.draft-pick.draft-departed,.draft-legend .draft-legend-gray{background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(69,83,96,.32) 8px 10px)}
+html[data-theme="dark"] .draft-pick.draft-departed,html[data-theme="dark"] .draft-legend .draft-legend-gray{background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(217,228,237,.34) 8px 10px)}
+.draft-board-table thead th:first-child,.draft-board-table tbody th{background:transparent;pointer-events:none}
+.draft-board-table thead th:first-child{padding:3px}
+.draft-corner-bubble{display:flex;align-items:center;min-height:36px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.draft-round-bubble,.draft-corner-bubble{pointer-events:auto}
+
+/* Match the draft board's individual sticky labels and clean panel surfaces. */
+.data-table thead th:first-child,.data-table tbody th:first-child,html[data-theme="dark"] .data-table thead th:first-child,html[data-theme="dark"] .data-table tbody th:first-child{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;pointer-events:none}
+.data-row-bubble,.data-corner-bubble{display:block;width:100%;padding:0 7px;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:auto}
+.data-row-bubble{height:48px;line-height:46px}
+.schedule-table .data-row-bubble{height:40px;line-height:38px}
+.data-corner-bubble{min-height:32px;line-height:30px}
+.profile-overview>div,.profile-chart-shell{background:var(--panel)}
+.profile-chart-shell .profile-frame{fill:var(--panel)}
+.profile-chart-shell .profile-league-label{stroke:var(--panel)}
+.regret-chooser,.regret-detail-head,.regret-comparison,.regret-week-section{background:var(--panel)}
+.regret-counterfactual{background:transparent}
+.regret-week-toolbar:after{background:var(--panel)}
+
+/* Keep the draft's sticky header cells visually separate, including while scrolling down. */
+.draft-board-table thead th,.draft-board-table thead th:first-child{padding:3px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;text-overflow:clip;pointer-events:none}
+.draft-header-bubble{display:flex;flex-direction:column;justify-content:center;width:100%;height:52px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);pointer-events:auto}
+.draft-header-name{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.draft-board-table thead th .draft-header-bubble small{width:100%;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis}
+
+/* Use the same clear surface as the other data views for weekly movement. */
+.shared-chart-scroll,.shared-chart-key,.shared-show-all{background:var(--panel)}
+.shared-chart-backdrop{fill:var(--panel)}
+.shared-series-point,.shared-end-label{stroke:var(--panel)}
+
+/* Keep manager rankings on the same clear surface; medal borders retain rank color. */
+.history-podium,.history-place-1,.history-place-2,.history-place-3,.history-row{background:var(--panel)}
+
+/* Top labels in the heatmap and schedule matrix match their sticky row labels. */
+.data-table thead th:not(:first-child),.schedule-table thead th:not(:first-child){padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;text-overflow:clip}
+.data-header-bubble{display:block;width:100%;height:32px;padding:0 7px;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:30px;text-align:center}
+
+/* Show the full fantasy season while keeping the sticky team names compact. */
+.heatmap-table{table-layout:fixed}
+.heatmap-table th:first-child{width:120px;min-width:120px;max-width:120px}
+.heatmap-table .heat-empty{border:1px solid var(--line);background:var(--panel)}
+@media(max-width:620px){.heatmap-scroll .heatmap-table th:first-child{width:104px;min-width:104px;max-width:104px}}
+
+/* A shorter draft viewport keeps its internal scrolling available without a visible bar. */
+.draft-board-scroll{max-height:520px;scrollbar-width:none}
+.draft-board-scroll::-webkit-scrollbar{display:none}
+
+/* Compact every draft row while keeping the label and pick bubbles equal in size. */
+.draft-board-table td{height:72px}
+.draft-cell{height:66px;min-height:66px}
+.draft-round-bubble,.draft-no-pick,.draft-pick{height:66px;min-height:66px}
+.draft-pick{padding:5px 7px}
+.draft-pick-name{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.draft-pick-meta{margin-top:2px}
+.draft-left-label{margin-top:3px;padding:1px 4px}
+.draft-no-pick{display:flex;align-items:center;justify-content:center;padding:0}
+.draft-cell-multi .draft-pick:first-child{padding-bottom:18px}
+.draft-cell-multi .draft-pick:first-child .draft-pick-meta{display:none}
+.draft-cell-multi:hover .draft-pick:first-child,.draft-cell-multi:focus-within .draft-pick:first-child{padding-bottom:5px}
+.draft-cell-multi:hover .draft-pick:first-child .draft-pick-meta,.draft-cell-multi:focus-within .draft-pick:first-child .draft-pick-meta{display:block}
+.draft-cell-multi:hover,.draft-cell-multi:focus-within{min-height:66px}
+.draft-more{height:15px}

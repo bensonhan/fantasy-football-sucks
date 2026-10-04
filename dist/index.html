@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32-v2.png">
-  <link rel="stylesheet" href="styles.css?v=hero-blend-fix">
+  <link rel="stylesheet" href="styles.css?v=compact-draft-cells">
 </head>
 <body>
   <main class="shell">
@@ -28,6 +28,7 @@
             <a href="#heatmap">Scoring Heatmap</a>
             <a href="#schedule">Schedule Matrix</a>
             <a href="#profiles">Scoring Profiles</a>
+            <a href="#draft">Draftboard Postmortem</a>
             <a href="#regret">Trade Regret</a>
             <a href="#movement">Power Movement</a>
             <a href="#history">Manager Rankings</a>
@@ -72,6 +73,11 @@
       <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league.</p></div><div class="trend-note">All teams · completed weeks</div></div>
       <div class="profile-board" id="scoringProfiles"></div>
     </section>
+    <section class="trend-panel" id="draft" aria-labelledby="draft-title">
+      <div class="trend-head"><div><h2 id="draft-title">Draftboard Postmortem</h2><p>Every pick by draft slot and round. Scroll for more rounds or teams; hover or focus a player for stats.</p></div><div class="heatmap-legend draft-legend" aria-label="Draft grade scale"><span>Low position rank</span><i class="heat-1" aria-hidden="true"></i><i class="heat-2" aria-hidden="true"></i><i class="heat-3" aria-hidden="true"></i><i class="heat-4" aria-hidden="true"></i><i class="heat-5" aria-hidden="true"></i><span>High</span><span><i class="draft-legend-gray" aria-hidden="true"></i>Dropped / traded</span></div></div>
+      <div id="draftBoard" aria-live="polite"></div>
+      <p class="draft-method">Color ranks points per start against all drafted players at the same position. Players with no starts or no same-position peers stay neutral. Picks no longer on their drafting team are gray with diagonal lines. Hover totals include all completed league matchups while rostered, including games after a trade.</p>
+    </section>
     <section class="trend-panel regret-panel" id="regret" aria-labelledby="regret-title">
       <div class="trend-head"><div><h2 id="regret-title">Trade Regret Analyzer</h2><p>Choose a team and move to compare actual scores with a no-move lineup.</p></div><div class="trend-note" id="regretTeamLabel">Choose a team below</div></div>
       <div id="regretReport" class="regret-report" aria-live="polite"></div>
@@ -92,11 +98,12 @@
   <script src="charts/utils.js"></script>
   <script src="charts/awards.js"></script>
   <script src="charts/scoring-profiles.js?v=scoring-profile-line"></script>
-  <script src="charts/scoring-heatmap.js"></script>
-  <script src="charts/schedule-matrix.js"></script>
+  <script src="charts/scoring-heatmap.js?v=seventeen-week-heatmap"></script>
+  <script src="charts/draft-board.js?v=draftboard-postmortem"></script>
+  <script src="charts/schedule-matrix.js?v=matching-data-headers"></script>
   <script src="charts/power-movement.js"></script>
   <script src="charts/regret-view.js?v=no-estimates"></script>
   <script src="charts/manager-history.js"></script>
-  <script src="app.js?v=sticky-sections"></script>
+  <script src="app.js?v=draft-position-percentile"></script>
 </body>
 </html>
