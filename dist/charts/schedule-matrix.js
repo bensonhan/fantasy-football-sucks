@@ -41,11 +41,11 @@ const ScheduleMatrixChart = (() => {
   function markup(teams) {
     const rows = sorted(teams).filter(team => team.analytics?.scheduleRecords);
     if (!rows.length) return '<div class="chart-empty">Sync a Sleeper league to calculate schedule swaps.</div>';
-    const header = rows.map(team => `<th scope="col" title="${esc(team.name)}">${esc(shortName(team.name))}</th>`).join('');
+    const header = rows.map(team => `<th scope="col" title="${esc(team.name)}"><span class="data-header-bubble">${esc(shortName(team.name))}</span></th>`).join('');
     const body = rows.map(team => {
       const actualRecord = team.analytics.scheduleRecords[team.sleeperRosterId];
       const actualScore = actualRecord ? actualRecord.wins + (actualRecord.ties * .5) : null;
-      return `<tr><th scope="row" title="${esc(team.name)}">${esc(team.name)}</th>${rows.map(scheduleTeam => {
+      return `<tr><th scope="row" title="${esc(team.name)}"><span class="data-row-bubble">${esc(team.name)}</span></th>${rows.map(scheduleTeam => {
         const record = team.analytics.scheduleRecords[scheduleTeam.sleeperRosterId];
         if (!record) return '<td class="matrix-cell">—</td>';
         const text = `${record.wins}-${record.losses}${record.ties ? `-${record.ties}` : ''}`;
@@ -56,7 +56,7 @@ const ScheduleMatrixChart = (() => {
         return `<td class="matrix-cell ${klass}" title="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${text}" aria-label="${esc(team.name)} with ${esc(scheduleTeam.name)}'s schedule: ${record.wins} wins, ${record.losses} losses${record.ties ? `, ${record.ties} ties` : ''}">${text}</td>`;
       }).join('')}</tr>`;
     }).join('');
-    return `<table class="data-table schedule-table"><thead><tr><th scope="col">Scoring team</th>${header}</tr></thead><tbody>${body}</tbody></table><p class="table-note">Green improves on the team's actual record, red is worse, and gray is the same. Outlined cells are actual records. When two swapped teams originally faced each other, they remain opponents for that week.</p>`;
+    return `<table class="data-table schedule-table"><thead><tr><th scope="col"><span class="data-corner-bubble">Scoring team</span></th>${header}</tr></thead><tbody>${body}</tbody></table><p class="table-note">Green improves on the team's actual record, red is worse, and gray is the same. Outlined cells are actual records. When two swapped teams originally faced each other, they remain opponents for that week.</p>`;
   }
   function render(holder, teams) { holder.innerHTML = markup(teams); }
   return {buildRecords, markup, render};

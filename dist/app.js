@@ -3,6 +3,7 @@ const AUTO_SYNC_MAX_AGE_MS=24*60*60*1000;
 let teams=load(); let selected=teams[0]?.id; let sleeperConnection=loadSleeper(); let isSyncing=false;
 let regretByRoster=loadRegret(),regretError='',regretLoaded=hasCachedRegret();
 let managerHistory=ManagerHistory.readCache(sleeperConnection?.leagueId);
+let draftBoard=loadDraftBoard(),draftError='',draftLoading=false;
 const $=s=>document.querySelector(s), rankList=$('#rankList'), editor=$('#editor');
 const themeToggle=$('#themeToggle');
 const sectionMenuToggle=$('#sectionMenuToggle'),sectionMenu=$('#sectionMenu');
@@ -18,6 +19,7 @@ function load(){try{const saved=JSON.parse(localStorage.getItem('power-board-tea
 function loadSleeper(){try{return JSON.parse(localStorage.getItem('power-board-sleeper'))||null}catch{return null}}
 function loadRegret(){try{const saved=JSON.parse(localStorage.getItem('power-board-regret'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===REGRET_CACHE_VERSION?saved.rows||{}:{}}catch{return {}}}
 function hasCachedRegret(){try{const saved=JSON.parse(localStorage.getItem('power-board-regret'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===REGRET_CACHE_VERSION}catch{return false}}
+function loadDraftBoard(){try{const saved=JSON.parse(localStorage.getItem('power-board-draft'));return saved?.leagueId===loadSleeper()?.leagueId&&saved.version===6?saved.board:null}catch{return null}}
 function save(){localStorage.setItem('power-board-teams',JSON.stringify(teams))}
 function score(t){return ChartUtils.score(t)}
 function sorted(){return ChartUtils.sorted(teams)}
@@ -27,13 +29,13 @@ function render(){
     rankList.innerHTML=`<div class="empty">${isSyncing?'Connecting to Sleeper…':'No league data yet. Use Sync league to connect.'}</div>`;
     editor.innerHTML='<div class="empty">League analysis will appear here.</div>';
     $('#selectedLabel').textContent='No team selected';
-    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderRegret();renderManagerHistory();
+    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderDraftBoard();renderRegret();renderManagerHistory();
     renderSyncMeta();save();return;
   }
   if(!teams.some(t=>t.id===selected))selected=list[0].id;
   rankList.innerHTML=list.map((t,i)=>{const rank=i+1,diff=t.prev-rank,move=diff>0?`▲ ${diff}`:diff<0?`▼ ${Math.abs(diff)}`:'—',record=`${t.wins}-${t.losses}${t.ties?`-${t.ties}`:''}`,a=t.analytics;const metrics=a?`<div class="metric"><span>Expected W ${infoIcon('expectedWins')}</span><b>${a.expectedWins.toFixed(2)}</b></div><div class="metric"><span>Avg rank ${infoIcon('avgRank')}</span><b>${a.avgWeeklyRank.toFixed(1)}</b></div><div class="metric"><span>Luck ${infoIcon('luck')}</span><b>${signed(a.luck)}</b></div>`:'';return `<article class="rank-row" tabindex="0" data-id="${t.id}" aria-label="Rank ${rank}, ${esc(t.name)}, score ${score(t).toFixed(1)}"><div class="rank-num">${String(rank).padStart(2,'0')}</div><div class="team-cell"><div class="team-name">${esc(t.name)}</div><div class="owner">${esc(t.owner)} · ${record}</div></div><div class="metrics">${metrics}</div><div class="score"><strong>${score(t).toFixed(1)}</strong><span>Power score ${infoIcon('powerScore')}</span></div><div class="move ${diff>0?'up':diff<0?'down':'same'}">${move}</div></article>`}).join('');
   rankList.querySelectorAll('.rank-row').forEach(el=>{el.addEventListener('click',()=>{selected=el.dataset.id;renderEditor()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selected=el.dataset.id;renderEditor()}})});
-  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderTrendChart();renderManagerHistory();
+  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderDraftBoard();renderTrendChart();renderManagerHistory();
   renderSyncMeta();save();
 }
 function esc(v){return ChartUtils.escapeHtml(v)}
@@ -68,6 +70,7 @@ function renderAwards(){AwardsChart.render($('#awardsStrip'),teams,infoIcon)}
 function renderScoringProfiles(){ScoringProfilesChart.render($('#scoringProfiles'),teams)}
 function renderScoringHeatmap(){ScoringHeatmapChart.render($('#scoringHeatmap'),teams)}
 function renderScheduleMatrix(){ScheduleMatrixChart.render($('#scheduleMatrix'),teams)}
+function renderDraftBoard(){DraftBoard.render($('#draftBoard'),draftBoard,draftError,draftLoading)}
 function renderTrendChart(){PowerMovementChart.render($('#trendChart'),$('#trendLegend'),teams)}
 function renderSyncMeta(){const el=$('#syncMeta');if(!sleeperConnection){el.textContent=isSyncing?'Connecting to Sleeper…':'Sleeper not connected';$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Sync league';return}const when=new Date(sleeperConnection.syncedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});el.innerHTML=`<span><strong>${esc(sleeperConnection.leagueName)}</strong><br>Last synced ${when} · Auto-checks daily</span>`;$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Switch league'}
 $('#sleeperBtn').onclick=()=>{$('#leagueId').value=sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID;$('#sleeperDialog').showModal();setTimeout(()=>{$('#leagueId').focus();$('#leagueId').select()},50)};$('#cancelSleeper').onclick=()=>$('#sleeperDialog').close();$('#sleeperForm').onsubmit=async e=>{e.preventDefault();await syncSleeper(new FormData(e.currentTarget).get('leagueId'))};
@@ -88,7 +91,7 @@ async function syncSleeper(rawId){
     const nextTeams=rosters.map((r,index)=>{const person=people.get(r.owner_id)||{},settings=r.settings||{},games=Number(settings.wins||0)+Number(settings.losses||0)+Number(settings.ties||0),total=Number(settings.fpts||0)+Number(settings.fpts_decimal||0)/100;return {id:`sleeper-${r.roster_id}`,sleeperRosterId:Number(r.roster_id),name:person.metadata?.team_name||person.display_name||person.username||`Team ${r.roster_id}`,owner:person.display_name||person.username||'Co-manager',wins:0,losses:0,ties:0,points:games?total/games:100,prev:oldRanks.get(`sleeper-${r.roster_id}`)||index+1}});
     analyzeLeague(nextTeams,weekData,currentWeek,league,leagueId);
     teams=nextTeams;
-    if(!sameLeague){regretByRoster={};regretLoaded=false;managerHistory=null}
+    if(!sameLeague){regretByRoster={};regretLoaded=false;managerHistory=null;draftBoard=null}
     regretError='';
     if(!hadAnalytics)sorted().forEach((team,index)=>team.prev=index+1);
     const completedWeeks=Math.max(0,currentWeek-1);
@@ -96,10 +99,27 @@ async function syncSleeper(rawId){
     localStorage.setItem('power-board-sleeper',JSON.stringify(sleeperConnection));
     selected=sorted()[0]?.id;$('#sleeperDialog').close();toast(`${sleeperConnection.leagueName} analyzed`);
     render();
+    draftError='';draftLoading=true;renderDraftBoard();
+    const draftPromise=(async()=>{
+      const drafts=await sleeperGet(`league/${leagueId}/drafts`);
+      if(!Array.isArray(drafts)||!drafts.length) return {teams:[],rounds:[],draftName:''};
+      const selectedDraft=drafts.find(item=>item.season===league.season&&item.status==='complete')||drafts.find(item=>item.status==='complete')||drafts[0];
+      const transactionWeeks=Array.from({length:currentWeek+1},(_,week)=>week);
+      const [draft,picks,transactionsByWeek]=await Promise.all([
+        sleeperGet(`draft/${selectedDraft.draft_id}`),
+        sleeperGet(`draft/${selectedDraft.draft_id}/picks`),
+        Promise.all(transactionWeeks.map(week=>sleeperGet(`league/${leagueId}/transactions/${week}`)))
+      ]);
+      if(!Array.isArray(picks))throw new Error('Sleeper returned incomplete draft picks.');
+      const transactions=[...new Map(transactionsByWeek.flat().filter(Boolean).map(tx=>[tx.transaction_id,tx])).values()];
+      return DraftBoard.model(draft,picks,rosters,weekData,teams,currentWeek,transactions);
+    })().then(board=>{draftBoard=board;draftLoading=false;draftError='';localStorage.setItem('power-board-draft',JSON.stringify({leagueId,version:6,board}));renderDraftBoard()})
+      .catch(error=>{console.error('Draft board failed',error);draftLoading=false;draftError='Sleeper draft data could not be loaded.';renderDraftBoard()});
     const [regretResult,historyResult]=await Promise.allSettled([
       Regret.load(leagueId,league,weekData,currentWeek),
       ManagerHistory.loadChain(league,users,rosters,sleeperGet)
     ]);
+    await draftPromise;
     if(regretResult.status==='fulfilled'){
       regretByRoster=Object.fromEntries(regretResult.value);regretError='';regretLoaded=true;
       localStorage.setItem('power-board-regret',JSON.stringify({leagueId,version:REGRET_CACHE_VERSION,rows:regretByRoster}));
@@ -174,4 +194,5 @@ function shouldAutoSync(now=new Date()){if(!sleeperConnection?.leagueId)return f
 const needsAnalyticsRefresh=teams.some(t=>!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank)||!Number.isFinite(t.analytics?.defensePoints)||!Number.isFinite(t.analytics?.defenseStarts));
 const needsRegretRefresh=Boolean(sleeperConnection?.leagueId)&&!regretLoaded;
 const needsHistoryRefresh=Boolean(sleeperConnection?.leagueId)&&!managerHistory;
-render();registerWebMCP();if(!teams.length||needsAnalyticsRefresh||needsRegretRefresh||needsHistoryRefresh||shouldAutoSync())syncSleeper(sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID);
+const needsDraftRefresh=Boolean(sleeperConnection?.leagueId)&&!draftBoard;
+render();registerWebMCP();if(!teams.length||needsAnalyticsRefresh||needsRegretRefresh||needsHistoryRefresh||needsDraftRefresh||shouldAutoSync())syncSleeper(sleeperConnection?.leagueId||DEFAULT_SLEEPER_LEAGUE_ID);
