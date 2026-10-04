@@ -1,24 +1,19 @@
-name: Deploy GitHub Pages
+name: Pull request checks
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pull-request-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  test:
+    name: Test site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,10 +24,3 @@ jobs:
         run: find dist -name '*.js' -exec node --check {} \;
       - name: Run tests
         run: node --test tests/*.test.js
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
