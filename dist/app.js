@@ -29,13 +29,13 @@ function render(){
     rankList.innerHTML=`<div class="empty">${isSyncing?'Connecting to Sleeper…':'No league data yet. Use Sync league to connect.'}</div>`;
     editor.innerHTML='<div class="empty">League analysis will appear here.</div>';
     $('#selectedLabel').textContent='No team selected';
-    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderDraftBoard();renderRegret();renderManagerHistory();
+    renderTrendChart();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderMedianRankings();renderDraftBoard();renderRegret();renderManagerHistory();
     renderSyncMeta();save();return;
   }
   if(!teams.some(t=>t.id===selected))selected=list[0].id;
   rankList.innerHTML=list.map((t,i)=>{const rank=i+1,diff=t.prev-rank,move=diff>0?`▲ ${diff}`:diff<0?`▼ ${Math.abs(diff)}`:'—',record=`${t.wins}-${t.losses}${t.ties?`-${t.ties}`:''}`,a=t.analytics;const metrics=a?`<div class="metric"><span>Expected W ${infoIcon('expectedWins')}</span><b>${a.expectedWins.toFixed(2)}</b></div><div class="metric"><span>Avg rank ${infoIcon('avgRank')}</span><b>${a.avgWeeklyRank.toFixed(1)}</b></div><div class="metric"><span>Luck ${infoIcon('luck')}</span><b>${signed(a.luck)}</b></div>`:'';return `<article class="rank-row" tabindex="0" data-id="${t.id}" aria-label="Rank ${rank}, ${esc(t.name)}, score ${score(t).toFixed(1)}"><div class="rank-num">${String(rank).padStart(2,'0')}</div><div class="team-cell"><div class="team-name">${esc(t.name)}</div><div class="owner">${esc(t.owner)} · ${record}</div></div><div class="metrics">${metrics}</div><div class="score"><strong>${score(t).toFixed(1)}</strong><span>Power score ${infoIcon('powerScore')}</span></div><div class="move ${diff>0?'up':diff<0?'down':'same'}">${move}</div></article>`}).join('');
   rankList.querySelectorAll('.rank-row').forEach(el=>{el.addEventListener('click',()=>{selected=el.dataset.id;renderEditor()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selected=el.dataset.id;renderEditor()}})});
-  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderDraftBoard();renderTrendChart();renderManagerHistory();
+  renderEditor();renderAwards();renderScoringProfiles();renderScoringHeatmap();renderScheduleMatrix();renderMedianRankings();renderDraftBoard();renderTrendChart();renderManagerHistory();
   renderSyncMeta();save();
 }
 function esc(v){return ChartUtils.escapeHtml(v)}
@@ -70,6 +70,7 @@ function renderAwards(){AwardsChart.render($('#awardsStrip'),teams,infoIcon)}
 function renderScoringProfiles(){ScoringProfilesChart.render($('#scoringProfiles'),teams)}
 function renderScoringHeatmap(){ScoringHeatmapChart.render($('#scoringHeatmap'),teams)}
 function renderScheduleMatrix(){ScheduleMatrixChart.render($('#scheduleMatrix'),teams)}
+function renderMedianRankings(){MedianRankingsChart.render($('#medianRankings'),teams)}
 function renderDraftBoard(){DraftBoard.render($('#draftBoard'),draftBoard,draftError,draftLoading)}
 function renderTrendChart(){PowerMovementChart.render($('#trendChart'),$('#trendLegend'),teams)}
 function renderSyncMeta(){const el=$('#syncMeta');if(!sleeperConnection){el.textContent=isSyncing?'Connecting to Sleeper…':'Sleeper not connected';$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Sync league';return}const when=new Date(sleeperConnection.syncedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});el.innerHTML=`<span><strong>${esc(sleeperConnection.leagueName)}</strong><br>Last synced ${when} · Auto-checks daily</span>`;$('#sleeperBtn').textContent=isSyncing?'Analyzing…':'Switch league'}
