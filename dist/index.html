@@ -31,6 +31,7 @@
             <a href="#draft">Draftboard Postmortem</a>
             <a href="#regret">Trade Regret</a>
             <a href="#movement">Power Movement</a>
+            <a href="#median">Median Rankings</a>
             <a href="#history">Manager Rankings</a>
           </nav>
         </div>
@@ -86,6 +87,10 @@
       <div class="trend-head"><div><h2 id="trend-title">Weekly power movement</h2><p>Every team’s weekly rank on one chart.</p></div><div class="trend-note">Hover a path or tap a team to trace it</div></div>
       <div class="shared-movement-board" id="trendChart"></div><div class="shared-movement-legend" id="trendLegend"></div>
     </section>
+    <section class="trend-panel" id="median" aria-labelledby="median-title">
+      <div class="trend-head"><div><h2 id="median-title">Median league rankings</h2><p>Standings if Sleeper’s median setting were on: an extra win for beating the weekly median, otherwise a loss.</p></div><div class="trend-note">Actual record + median record</div></div>
+      <div class="data-scroll" id="medianRankings"></div>
+    </section>
     <section class="trend-panel history-panel" id="history" aria-labelledby="history-title">
       <div class="trend-head"><div><h2 id="history-title">All-time manager rankings</h2><p>Compare historical rank, total points, average finish, and points per season.</p></div><div class="trend-note">The league's scoring legacy</div></div>
       <div class="history-board" id="managerHistory" aria-live="polite"></div>
@@ -101,6 +106,7 @@
   <script src="charts/scoring-heatmap.js?v=seventeen-week-heatmap"></script>
   <script src="charts/draft-board.js?v=draftboard-postmortem"></script>
   <script src="charts/schedule-matrix.js?v=matching-data-headers"></script>
+  <script src="charts/median-rankings.js"></script>
   <script src="charts/power-movement.js"></script>
   <script src="charts/regret-view.js?v=no-estimates"></script>
   <script src="charts/manager-history.js"></script>
