@@ -97,7 +97,15 @@ const DraftBoard = (() => {
       draftName: draft.metadata?.name || `${draft.season || ''} draft`};
   }
 
-  function markup(board) {
+  function mobileRounds(board, team) {
+    return board.rounds.map(([round, cells]) => `<section class="draft-mobile-round"><h3>Round ${round}</h3>${(cells[team.rosterId] || []).map(pick => {
+      const bucket = pick.quality == null ? null : Math.max(1, Math.min(5, Math.floor(pick.quality * 5) + 1));
+      const tone = !pick.retained ? 'draft-departed' : bucket == null ? 'draft-ungraded' : `heat-${bucket}`;
+      return `<article class="draft-mobile-pick ${tone}"><h4>${escape(pick.name)}</h4><p class="draft-mobile-meta">${escape(pick.position || 'Player')}${Number.isFinite(pick.pickNo) ? ` · Pick #${pick.pickNo}` : ''}</p><p class="draft-mobile-status">${escape(pick.retained ? 'Still on drafting team' : `${pick.departureLabel} from drafting team`)}</p><dl><div><dt>Starts</dt><dd>${pick.stats.starts}</dd></div><div><dt>Fantasy points</dt><dd>${pointsLabel(pick.stats.points)}</dd></div><div><dt>Points / start</dt><dd>${pick.pointsPerStart == null ? 'No starts yet' : pointsLabel(pick.pointsPerStart)}</dd></div><div><dt>Position percentile</dt><dd>${pick.quality == null ? 'Pending' : `${Math.round(pick.quality * 100)}%`}</dd></div></dl></article>`;
+    }).join('') || '<p class="draft-mobile-empty">No pick this round</p>'}</section>`).join('');
+  }
+
+  function markup(board, selectedRosterId) {
     if (!board) return '<div class="chart-empty">Sync a Sleeper league to load Draftboard Postmortem.</div>';
     if (!board.teams.length || !board.rounds.length) return '<div class="chart-empty">No draft picks are available for this league.</div>';
     const headers = board.teams.map(team => `<th scope="col" title="${escape(team.name)}"><span class="draft-header-bubble">${team.slot ? `<small>Slot ${team.slot}</small>` : ''}<span class="draft-header-name">${escape(team.name)}</span></span></th>`).join('');
@@ -113,11 +121,19 @@ const DraftBoard = (() => {
         return `<span class="draft-pick ${tone}${round <= 2 ? ' draft-pick-top' : ''}" tabindex="0" aria-label="${escape(label)}"><span class="draft-pick-name">${escape(pick.name)}</span><span class="draft-pick-meta">${escape(pick.position)}${Number.isFinite(pick.pickNo) ? ` · #${pick.pickNo}` : ''}</span>${pick.retained ? '' : `<span class="draft-left-label ${pick.departureLabel === 'Traded' ? 'draft-left-traded' : 'draft-left-dropped'}">${escape(pick.departureLabel)}</span>`}<span class="draft-tooltip" role="tooltip"><strong>${escape(pick.name)}</strong>${pick.retained ? '' : `<span>${escape(status)}</span>`}<span>${pick.stats.starts} starts</span><span>${pointsLabel(pick.stats.points)} fantasy points</span><span>${escape(rateLabel)}</span><span>${escape(gradeLabel)}</span></span></span>`;
       }).join('') : '<span class="draft-no-pick">—</span>'}${picks.length > 1 ? `<span class="draft-more">+${picks.length - 1} more pick${picks.length === 2 ? '' : 's'}</span>` : ''}</div></td>`;
     }).join('')}</tr>`).join('');
-    return `<div class="draft-board-scroll" role="region" aria-label="Draftboard Postmortem. Scroll vertically for more rounds and horizontally for more teams." tabindex="0"><table class="draft-board-table" aria-label="Draft picks by round and team"><thead><tr><th scope="col"><span class="draft-header-bubble draft-corner-bubble">Round</span></th>${headers}</tr></thead><tbody>${body}</tbody></table></div>`;
+    const selectedTeam = board.teams.find(team => team.rosterId === selectedRosterId) || board.teams[0];
+    const mobile = `<div class="draft-mobile"><label class="draft-team-picker">Drafting team<select class="draft-team-select">${board.teams.map(team => `<option value="${escape(team.rosterId)}"${team === selectedTeam ? ' selected' : ''}>${escape(team.slot ? `Slot ${team.slot} · ${team.name}` : team.name)}</option>`).join('')}</select></label><div class="draft-mobile-rounds">${mobileRounds(board, selectedTeam)}</div></div>`;
+    return `${mobile}<div class="draft-board-scroll" role="region" aria-label="Draftboard Postmortem. Scroll vertically for more rounds and horizontally for more teams." tabindex="0"><table class="draft-board-table" aria-label="Draft picks by round and team"><thead><tr><th scope="col"><span class="draft-header-bubble draft-corner-bubble">Round</span></th>${headers}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
 
   function render(element, board, error, loading) {
-    element.innerHTML = error ? `<div class="chart-empty">${escape(error)}</div>` : loading && !board ? '<div class="chart-empty">Loading draft picks…</div>' : markup(board);
+    const selectedRosterId = element.querySelector('.draft-team-select')?.value;
+    element.innerHTML = error ? `<div class="chart-empty">${escape(error)}</div>` : loading && !board ? '<div class="chart-empty">Loading draft picks…</div>' : markup(board, selectedRosterId);
+    const picker = element.querySelector('.draft-team-select');
+    if (picker) picker.addEventListener('change', () => {
+      const team = board.teams.find(team => team.rosterId === picker.value);
+      if (team) element.querySelector('.draft-mobile-rounds').innerHTML = mobileRounds(board, team);
+    });
   }
   return {model, markup, render};
 })();

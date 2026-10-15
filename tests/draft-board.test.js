@@ -124,3 +124,30 @@ test('departed picks distinguish a trade from a drop', () => {
   assert.match(html,/class="draft-left-label draft-left-traded">Traded/);
   assert.match(html,/class="draft-left-label draft-left-dropped">Dropped/);
 });
+
+test('mobile team view includes every pick, empty rounds, and visible stats', () => {
+  const board = DraftBoard.model({settings:{rounds:2},slot_to_roster_id:{1:1,2:2}},[
+    {roster_id:1,round:1,pick_no:1,player_id:'a',metadata:{first_name:'Alex',position:'WR'}},
+    {roster_id:1,round:1,pick_no:2,player_id:'b',metadata:{first_name:'Bob',position:'WR'}},
+    {roster_id:2,round:1,pick_no:3,player_id:'c',metadata:{first_name:'Chris',position:'WR'}}
+  ],[{roster_id:1,players:['a','b']},{roster_id:2,players:[]}],
+  [{week:1,entries:[{starters:['a','b'],players_points:{a:20,b:10}}]}],
+  [{sleeperRosterId:1,name:'<One>'},{sleeperRosterId:2,name:'Two'}],2);
+  const mobile = DraftBoard.markup(board).split('<div class="draft-board-scroll"')[0];
+  assert.match(mobile,/<label[^>]*>Drafting team<select/);
+  assert.match(mobile,/<option value="1" selected>Slot 1 · &lt;One&gt;/);
+  assert.equal((mobile.match(/<article /g) || []).length,2);
+  assert.match(mobile,/<h4>Alex<\/h4>/);
+  assert.match(mobile,/<h4>Bob<\/h4>/);
+  assert.doesNotMatch(mobile,/<h4>Chris/);
+  assert.match(mobile,/<dt>Fantasy points<\/dt><dd>20\.0<\/dd>/);
+  assert.match(mobile,/<dt>Position percentile<\/dt><dd>100%<\/dd>/);
+  assert.match(mobile,/Round 2<\/h3><p class="draft-mobile-empty">No pick this round/);
+  const otherTeam = DraftBoard.markup(board,'2').split('<div class="draft-board-scroll"')[0];
+  assert.match(otherTeam,/<option value="2" selected>/);
+  assert.match(otherTeam,/<h4>Chris<\/h4>/);
+  assert.match(otherTeam,/Dropped from drafting team/);
+  assert.match(otherTeam,/<dd>No starts yet<\/dd>/);
+  assert.match(otherTeam,/<dd>Pending<\/dd>/);
+  assert.doesNotMatch(otherTeam,/<h4>Alex/);
+});
