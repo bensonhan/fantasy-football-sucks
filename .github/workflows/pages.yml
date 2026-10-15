@@ -29,6 +29,8 @@ jobs:
         run: find dist -name '*.js' -exec node --check {} \;
       - name: Run tests
         run: node --test tests/*.test.js
+      - name: Version assets for cache busting
+        run: node scripts/version-assets.js dist "$GITHUB_SHA"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
