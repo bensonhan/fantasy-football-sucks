@@ -41,7 +41,7 @@ test('replacement awards select kicker points and completed move leaders with se
   assert.equal(Awards.winners(candidates).kickerWhisperer.name, 'Team A');
   assert.equal(Awards.winners(candidates).waiverTransactions.name, 'Team B');
   const html = Awards.markup(candidates, key => `<i>${key}</i>`);
-  assert.match(html, /“K” Whisperer/);
+  assert.match(html, /Fantasy Futbol/);
   assert.match(html, /24\.0 started kicker points · 2 starts/);
   assert.match(html, /Commitment Issues/);
   assert.match(html, /5 completed transactions/);
