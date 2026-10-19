@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32-v2.png">
-  <link rel="stylesheet" href="styles.css?v=readable-mobile-draft">
+  <link rel="stylesheet" href="styles.css?v=green-red-scales">
 </head>
 <body>
   <main class="shell">
@@ -63,7 +63,7 @@
       <div class="awards-strip" id="awardsStrip"></div>
     </section>
     <section class="trend-panel" id="heatmap" aria-labelledby="heatmap-title">
-      <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week. <span class="heatmap-swipe-hint">Swipe to see all weeks →</span></p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Cold</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>Hot</span></div></div>
+      <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week. <span class="heatmap-swipe-hint">Swipe to see all weeks →</span></p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Low</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>High</span></div></div>
       <div class="data-scroll heatmap-scroll" id="scoringHeatmap" role="region" aria-label="Weekly scoring heatmap. Scroll horizontally to see all weeks." tabindex="0"></div>
     </section>
     <section class="trend-panel" id="schedule" aria-labelledby="schedule-title">
@@ -71,7 +71,7 @@
       <div class="data-scroll" id="scheduleMatrix"></div>
     </section>
     <section class="trend-panel" id="profiles" aria-labelledby="profiles-title">
-      <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league.</p></div><div class="trend-note">All teams · completed weeks</div></div>
+      <div class="trend-head"><div><h2 id="profiles-title">Team scoring profiles</h2><p>Weekly scoring range, with each team’s average set against the league. Red is below the league average; green is above.</p></div><div class="trend-note">All teams · completed weeks</div></div>
       <div class="profile-board" id="scoringProfiles"></div>
     </section>
     <section class="trend-panel" id="draft" aria-labelledby="draft-title">
@@ -102,7 +102,7 @@
   <script src="regret.js?v=no-estimates"></script>
   <script src="charts/utils.js"></script>
   <script src="charts/awards.js"></script>
-  <script src="charts/scoring-profiles.js?v=scoring-profile-line"></script>
+  <script src="charts/scoring-profiles.js?v=green-red-scales"></script>
   <script src="charts/scoring-heatmap.js?v=seventeen-week-heatmap"></script>
   <script src="charts/draft-board.js?v=draftboard-postmortem"></script>
   <script src="charts/schedule-matrix.js?v=matching-data-headers"></script>

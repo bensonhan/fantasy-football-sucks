@@ -100,19 +100,21 @@ async function syncSleeper(rawId){
     localStorage.setItem('power-board-sleeper',JSON.stringify(sleeperConnection));
     selected=sorted()[0]?.id;$('#sleeperDialog').close();toast(`${sleeperConnection.leagueName} analyzed`);
     render();
+    const transactionsPromise=Promise.all(Array.from({length:currentWeek+1},(_,week)=>sleeperGet(`league/${leagueId}/transactions/${week}`)))
+      .then(weeks=>{if(!weeks.every(Array.isArray))throw new Error('Sleeper returned incomplete transactions.');return [...new Map(weeks.flat().filter(Boolean).map(tx=>[tx.transaction_id,tx])).values()]});
+    const awardsPromise=transactionsPromise.then(transactions=>{AwardsChart.applyTransactions(teams,transactions);save();renderAwards()})
+      .catch(error=>console.error('Waiver award failed',error));
     draftError='';draftLoading=true;renderDraftBoard();
     const draftPromise=(async()=>{
       const drafts=await sleeperGet(`league/${leagueId}/drafts`);
       if(!Array.isArray(drafts)||!drafts.length) return {teams:[],rounds:[],draftName:''};
       const selectedDraft=drafts.find(item=>item.season===league.season&&item.status==='complete')||drafts.find(item=>item.status==='complete')||drafts[0];
-      const transactionWeeks=Array.from({length:currentWeek+1},(_,week)=>week);
-      const [draft,picks,transactionsByWeek]=await Promise.all([
+      const [draft,picks,transactions]=await Promise.all([
         sleeperGet(`draft/${selectedDraft.draft_id}`),
         sleeperGet(`draft/${selectedDraft.draft_id}/picks`),
-        Promise.all(transactionWeeks.map(week=>sleeperGet(`league/${leagueId}/transactions/${week}`)))
+        transactionsPromise
       ]);
       if(!Array.isArray(picks))throw new Error('Sleeper returned incomplete draft picks.');
-      const transactions=[...new Map(transactionsByWeek.flat().filter(Boolean).map(tx=>[tx.transaction_id,tx])).values()];
       return DraftBoard.model(draft,picks,rosters,weekData,teams,currentWeek,transactions);
     })().then(board=>{draftBoard=board;draftLoading=false;draftError='';localStorage.setItem('power-board-draft',JSON.stringify({leagueId,version:6,board}));renderDraftBoard()})
       .catch(error=>{console.error('Draft board failed',error);draftLoading=false;draftError='Sleeper draft data could not be loaded.';renderDraftBoard()});
@@ -120,7 +122,7 @@ async function syncSleeper(rawId){
       Regret.load(leagueId,league,weekData,currentWeek),
       ManagerHistory.loadChain(league,users,rosters,sleeperGet)
     ]);
-    await draftPromise;
+    await Promise.all([draftPromise,awardsPromise]);
     if(regretResult.status==='fulfilled'){
       regretByRoster=Object.fromEntries(regretResult.value);regretError='';regretLoaded=true;
       localStorage.setItem('power-board-regret',JSON.stringify({leagueId,version:REGRET_CACHE_VERSION,rows:regretByRoster}));
@@ -136,18 +138,20 @@ async function syncSleeper(rawId){
 }
 function analyzeLeague(teamList,weekData,currentWeek,league,leagueId){
   const ids=teamList.map(t=>t.sleeperRosterId);
-  const stats=new Map(ids.map(id=>[id,{scores:[],weeklyScores:[],zs:[],expectedParts:[],expectedWins:0,allPlayWins:0,allPlayLosses:0,allPlayTies:0,rankSum:0,actualWins:0,actualLosses:0,actualTies:0,pointsAgainst:0,badBeats:0,thiefWins:0,defensePoints:0,defenseStarts:0,closest:null,blowout:null}]));
+  const stats=new Map(ids.map(id=>[id,{scores:[],weeklyScores:[],zs:[],expectedParts:[],expectedWins:0,allPlayWins:0,allPlayLosses:0,allPlayTies:0,rankSum:0,actualWins:0,actualLosses:0,actualTies:0,pointsAgainst:0,badBeats:0,thiefWins:0,defensePoints:0,defenseStarts:0,kickerPoints:0,kickerStarts:0,closest:null,blowout:null}]));
   const past=weekData.filter(w=>w.week<currentWeek&&w.entries.length>1);
   for(const week of past){
     const entries=week.entries.filter(e=>stats.has(Number(e.roster_id))),scores=entries.map(e=>Number(e.points||0));
     if(scores.length<2)continue;
-    const avg=mean(scores),spread=std(scores),med=median(scores),ranked=[...entries].sort((a,b)=>Number(b.points||0)-Number(a.points||0));
+    const avg=mean(scores),spread=std(scores),med=median(scores);
     for(const entry of entries){
       const id=Number(entry.roster_id),s=stats.get(id),pts=Number(entry.points||0),wins=scores.filter(x=>pts>x).length,ties=Math.max(0,scores.filter(x=>pts===x).length-1),expected=(wins+.5*ties)/(scores.length-1);
-      const weeklyRank=ranked.findIndex(x=>Number(x.roster_id)===id)+1;
+      const weeklyRank=1+scores.filter(other=>other>pts).length;
       s.scores.push(pts);s.weeklyScores.push({week:week.week,score:pts,rank:weeklyRank});s.zs.push(spread?(pts-avg)/spread:0);s.expectedParts.push(expected);s.expectedWins+=expected;s.allPlayWins+=wins;s.allPlayTies+=ties;s.allPlayLosses+=scores.length-1-wins-ties;s.rankSum+=weeklyRank;
       const defense=startedDefensePoints(entry,league.roster_positions);
       s.defensePoints+=defense.points;s.defenseStarts+=defense.starts;
+      const kicker=startedPositionPoints(entry,league.roster_positions,'K');
+      s.kickerPoints+=kicker.points;s.kickerStarts+=kicker.starts;
     }
     for(const pair of groupMatchups(entries)){if(pair.length!==2)continue;const [a,b]=pair,ap=Number(a.points||0),bp=Number(b.points||0);applyResult(stats.get(Number(a.roster_id)),ap,bp,med,week.week);applyResult(stats.get(Number(b.roster_id)),bp,ap,med,week.week)}
   }
@@ -161,15 +165,16 @@ function analyzeLeague(teamList,weekData,currentWeek,league,leagueId){
   const expValues={},seasonValues={},recentValues={};
   for(const id of ids){const s=stats.get(id),count=Math.max(1,s.scores.length);expValues[id]=s.expectedWins/count;seasonValues[id]=mean(s.zs);recentValues[id]=weightedRecent(s.zs)}
   const expPct=percentiles(expValues),seasonPct=percentiles(seasonValues),recentPct=percentiles(recentValues),odds=simulatePlayoffs([...ids],stats,weekData,currentWeek,Number(league.settings?.playoff_teams||6),leagueId),scheduleRecords=ScheduleMatrixChart.buildRecords(ids,past);
-  for(const team of teamList){const s=stats.get(team.sleeperRosterId),count=Math.max(1,s.scores.length);team.wins=s.actualWins;team.losses=s.actualLosses;team.ties=s.actualTies;team.points=mean(s.scores)||team.points;team.analytics={powerScore:.45*expPct[team.sleeperRosterId]+.35*seasonPct[team.sleeperRosterId]+.20*recentPct[team.sleeperRosterId],expectedWins:s.expectedWins,luck:s.actualWins+.5*s.actualTies-s.expectedWins,allPlayWins:s.allPlayWins,allPlayLosses:s.allPlayLosses,allPlayTies:s.allPlayTies,avgWeeklyRank:s.rankSum/count,recentZ:recentValues[team.sleeperRosterId],consistency:std(s.scores),pointsAgainst:s.pointsAgainst,badBeats:s.badBeats,thiefWins:s.thiefWins,defensePoints:s.defensePoints,defenseStarts:s.defenseStarts,closestGame:gameLabel(s.closest),largestBlowout:gameLabel(s.blowout),playoffOdds:odds[team.sleeperRosterId]||0,rankHistory:histories[team.sleeperRosterId],weeklyScores:s.weeklyScores,scheduleRecords:scheduleRecords[team.sleeperRosterId]}}
+  for(const team of teamList){const s=stats.get(team.sleeperRosterId),count=Math.max(1,s.scores.length);team.wins=s.actualWins;team.losses=s.actualLosses;team.ties=s.actualTies;team.points=mean(s.scores)||team.points;team.analytics={awardCalculationVersion:3,powerScore:.45*expPct[team.sleeperRosterId]+.35*seasonPct[team.sleeperRosterId]+.20*recentPct[team.sleeperRosterId],expectedWins:s.expectedWins,luck:s.actualWins+.5*s.actualTies-s.expectedWins,allPlayWins:s.allPlayWins,allPlayLosses:s.allPlayLosses,allPlayTies:s.allPlayTies,avgWeeklyRank:s.rankSum/count,recentZ:recentValues[team.sleeperRosterId],consistency:std(s.scores),pointsAgainst:s.pointsAgainst,badBeats:s.badBeats,thiefWins:s.thiefWins,defensePoints:s.defensePoints,defenseStarts:s.defenseStarts,kickerPoints:s.kickerPoints,kickerStarts:s.kickerStarts,closestGame:gameLabel(s.closest),largestBlowout:gameLabel(s.blowout),playoffOdds:odds[team.sleeperRosterId]||0,rankHistory:histories[team.sleeperRosterId],weeklyScores:s.weeklyScores,scheduleRecords:scheduleRecords[team.sleeperRosterId]}}
   const allPlayScores=teamList.map(t=>t.analytics.allPlayWins+.5*t.analytics.allPlayTies);
   for(const team of teamList){const value=team.analytics.allPlayWins+.5*team.analytics.allPlayTies;team.analytics.allPlayRank=1+allPlayScores.filter(other=>other>value).length}
 }
 function applyResult(s,pts,opp,med,week){const margin=pts-opp;if(margin>0)s.actualWins++;else if(margin<0)s.actualLosses++;else s.actualTies++;s.pointsAgainst+=opp;if(margin<0&&pts>med)s.badBeats++;if(margin>0&&pts<med)s.thiefWins++;const game={week,margin,abs:Math.abs(margin)};if(!s.closest||game.abs<s.closest.abs)s.closest=game;if(!s.blowout||game.abs>s.blowout.abs)s.blowout=game}
-function startedDefensePoints(entry,rosterPositions){
+function startedDefensePoints(entry,rosterPositions){return startedPositionPoints(entry,rosterPositions,'DEF')}
+function startedPositionPoints(entry,rosterPositions,position){
   if(!Array.isArray(entry.starters)||!Array.isArray(rosterPositions))return {points:0,starts:0};
   return rosterPositions.reduce((total,slot,index)=>{
-    if(slot!=='DEF')return total;
+    if(slot!==position)return total;
     const id=entry.starters[index];
     if(!id||id==='0')return total;
     const raw=entry.starters_points?.[index]??entry.players_points?.[id];
@@ -192,7 +197,7 @@ function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('sh
 document.addEventListener('click',event=>{const btn=event.target.closest('.info-btn');if(!btn)return;event.preventDefault();event.stopPropagation();openMetricInfo(btn.dataset.info)});$('#closeInfo').onclick=()=>$('#infoDialog').close();
 function registerWebMCP(){const c=document.modelContext;if(!c?.registerTool)return;try{c.registerTool({name:'get_power_rankings',title:'Get power rankings',description:'Return the current ordered fantasy football power rankings and scores.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute:()=>({rankings:sorted().map((t,i)=>({rank:i+1,team:t.name,manager:t.owner,score:Number(score(t).toFixed(1))}))})})}catch(e){console.warn('WebMCP unavailable',e)}}
 function shouldAutoSync(now=new Date()){if(!sleeperConnection?.leagueId)return false;const lastSync=Date.parse(sleeperConnection.syncedAt);return !Number.isFinite(lastSync)||now.getTime()-lastSync>=AUTO_SYNC_MAX_AGE_MS}
-const needsAnalyticsRefresh=teams.some(t=>!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank)||!Number.isFinite(t.analytics?.defensePoints)||!Number.isFinite(t.analytics?.defenseStarts));
+const needsAnalyticsRefresh=teams.some(t=>t.analytics?.awardCalculationVersion!==3||!Array.isArray(t.analytics?.weeklyScores)||!t.analytics?.scheduleRecords||!Number.isFinite(t.analytics?.allPlayRank)||!Number.isFinite(t.analytics?.defensePoints)||!Number.isFinite(t.analytics?.defenseStarts)||!Number.isFinite(t.analytics?.kickerPoints)||!Number.isFinite(t.analytics?.kickerStarts)||!Number.isFinite(t.analytics?.waiverTransactions));
 const needsRegretRefresh=Boolean(sleeperConnection?.leagueId)&&!regretLoaded;
 const needsHistoryRefresh=Boolean(sleeperConnection?.leagueId)&&!managerHistory;
 const needsDraftRefresh=Boolean(sleeperConnection?.leagueId)&&!draftBoard;
