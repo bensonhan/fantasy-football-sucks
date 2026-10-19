@@ -7,7 +7,7 @@ A Sleeper fantasy football dashboard for settling group chat arguments with numb
 ## Features
 
 - **Power rankings and team reports:** expected wins, all-play records, recent form, consistency, and simulated playoff odds.
-- **League awards:** Juggernaut, Heartbreak Kid, Escape Artist, Commitment Issues, “K” Whisperer, and “D” Whisperer.
+- **League awards:** Juggernaut, Heartbreak Kid, Escape Artist, Commitment Issues, Fantasy Futbol, and “D” Whisperer.
 - **Weekly scoring heatmap:** scores and league ranks for each week.
 - **Schedule swap matrix:** hypothetical records with another team's schedule.
 - **Team scoring profiles:** weekly floors, averages, and ceilings against the league average.
@@ -43,7 +43,7 @@ Power scores combine three league-relative percentiles:
 
 Weekly analysis uses completed regular-season weeks. Playoff odds use 3,000 simulations based on past scoring rather than injuries or player projections. Each metric's info button explains its calculation.
 
-Commitment Issues counts completed waiver claims, free-agent transactions, and trades, including preseason and the current week. Each transaction counts once per participating team, regardless of the number of players involved. Pending, failed, and canceled transactions are excluded. “K” and “D” Whisperer count only points from starting kicker and defense slots in completed weeks.
+Commitment Issues counts completed waiver claims, free-agent transactions, and trades, including preseason and the current week. Each transaction counts once per participating team, regardless of the number of players involved. Pending, failed, and canceled transactions are excluded. Fantasy Futbol and “D” Whisperer count only points from starting kicker and defense slots in completed weeks.
 
 ## Checks
 
