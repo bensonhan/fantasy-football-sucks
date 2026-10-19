@@ -222,3 +222,26 @@ test('Commitment Issues counts each completed trade once for each participating 
   assert.equal(Awards.winners(candidates).waiverTransactions, candidates[1]);
   assert.match(Awards.markup(candidates), /4 completed transactions/);
 });
+
+test('award leaderboards rank the field, limit rows, and exclude nonqualifying teams', () => {
+  const candidates = Array.from({length:6}, (_, index) => ({
+    name:`Contender ${index + 1}`, sleeperRosterId:index + 1,
+    analytics:{weeklyScores:[{rank:1, score:100 + index}], badBeats:index,
+      thiefWins:index, waiverTransactions:index, kickerStarts:1, kickerPoints:-index,
+      defenseStarts:1, defensePoints:index}
+  }));
+  const rankings = Awards.rankings(candidates);
+  assert.deepEqual(rankings.heartbreak.map(team => team.name),
+    ['Contender 6','Contender 5','Contender 4','Contender 3','Contender 2']);
+  assert.equal(rankings.kickerWhisperer.length, 6); // Zero/negative scoring starts still qualify.
+  assert.equal(rankings.kickerWhisperer[0], candidates[0]);
+  for (const [limit, expected] of [[1,1], [3,3]]) {
+    const html = Awards.markup(candidates, () => '', limit);
+    const cards = html.split('<article').slice(1);
+    assert.equal(cards.length, 6);
+    for (const card of cards) assert.equal((card.match(/<li /g) || []).length, expected);
+  }
+  assert.equal(candidates[0].name, 'Contender 1'); // Sorting never changes the source array.
+  candidates[0].name = '<script>alert("team")</script>';
+  assert.doesNotMatch(Awards.markup(candidates), /<script>/);
+});

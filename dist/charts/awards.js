@@ -1,5 +1,5 @@
 const AwardsChart = (() => {
-  const {escapeHtml: esc, sorted} = typeof module !== 'undefined' ? require('./utils.js') : ChartUtils;
+  const {escapeHtml: esc} = typeof module !== 'undefined' ? require('./utils.js') : ChartUtils;
   const metricInfo = {
     awardJuggernaut:{title:'Juggernaut award',body:'Juggernaut goes to the team with the most first-place weekly scoring finishes.',example:'Teams tied for the highest score each earn a weekly crown.'},
     awardHeartbreak:{title:'Heartbreak Kid award',body:'Heartbreak Kid goes to the team with the most losses in weeks when it still scored above the league median.',example:'Scores exactly at the median and tied matchups do not count.'},
@@ -11,37 +11,43 @@ const AwardsChart = (() => {
   const totalPoints = team => team.analytics.weeklyScores.reduce((sum, week) => sum + (Number(week.score) || 0), 0);
   const breakTie = (a, b) => totalPoints(b) - totalPoints(a)
     || String(a.sleeperRosterId ?? a.id ?? a.name).localeCompare(String(b.sleeperRosterId ?? b.id ?? b.name), 'en', {numeric:true});
-  function winners(teams) {
-    const eligible = sorted(teams).filter(team => team.analytics?.weeklyScores?.length);
+  const weeklyCrowns = team => team.analytics.weeklyScores.filter(week => week.rank === 1).length;
+  const plural = (value, word) => `${value} ${word}${value === 1 ? '' : word.endsWith('loss') ? 'es' : 's'}`;
+  const awards = [
+    {id:'juggernaut', icon:'👑', title:'Juggernaut', key:'awardJuggernaut', value:weeklyCrowns,
+      qualifies:team => weeklyCrowns(team) > 0, detail:team => plural(weeklyCrowns(team),'weekly crown'), empty:'No weekly crowns yet'},
+    {id:'heartbreak', icon:'💔', title:'Heartbreak Kid', key:'awardHeartbreak', value:team => team.analytics.badBeats,
+      qualifies:team => team.analytics.badBeats > 0, detail:team => plural(team.analytics.badBeats,'above-median loss'), empty:'No above-median losses yet'},
+    {id:'escape', icon:'🥷', title:'Escape Artist', key:'awardEscape', value:team => team.analytics.thiefWins,
+      qualifies:team => team.analytics.thiefWins > 0, detail:team => plural(team.analytics.thiefWins,'below-median win'), empty:'No below-median wins yet'},
+    {id:'waiverTransactions', icon:'🔄', title:'Commitment Issues', key:'awardWaiverTransactions', value:team => team.analytics.waiverTransactions,
+      qualifies:team => team.analytics.waiverTransactions > 0, detail:team => plural(team.analytics.waiverTransactions,'completed transaction'), empty:'No completed waiver, free-agent, or trade transactions yet'},
+    {id:'kickerWhisperer', icon:'🦵', title:'Fantasy Futbol', key:'awardKickerWhisperer', value:team => team.analytics.kickerPoints,
+      qualifies:team => team.analytics.kickerStarts > 0 && Number.isFinite(team.analytics.kickerPoints), detail:team => `${team.analytics.kickerPoints.toFixed(1)} started kicker points · ${plural(team.analytics.kickerStarts,'start')}`, empty:'No kicker starts yet'},
+    {id:'dWhisperer', icon:'🛡️', title:'“D” Whisperer', key:'awardDWhisperer', value:team => team.analytics.defensePoints,
+      qualifies:team => team.analytics.defenseStarts > 0 && Number.isFinite(team.analytics.defensePoints), detail:team => `${team.analytics.defensePoints.toFixed(1)} started D/ST points · ${plural(team.analytics.defenseStarts,'start')}`, empty:'No D/ST starts yet'}
+  ];
+  function rankings(teams) {
+    const eligible = teams.filter(team => team.analytics?.weeklyScores?.length);
     if (!eligible.length) return null;
-    const most = getter => [...eligible].sort((a, b) => getter(b) - getter(a) || breakTie(a, b))[0];
-    const weeklyCrowns = team => team.analytics.weeklyScores.filter(week => week.rank === 1).length;
-    const kickerPool = eligible.filter(team => team.analytics.kickerStarts > 0);
-    const waiverPool = eligible.filter(team => team.analytics.waiverTransactions > 0);
-    const defensePool = eligible.filter(team => team.analytics.defenseStarts > 0);
-    return {
-      juggernaut: most(weeklyCrowns),
-      heartbreak: eligible.some(team => team.analytics.badBeats > 0) ? most(team => team.analytics.badBeats) : null,
-      escape: eligible.some(team => team.analytics.thiefWins > 0) ? most(team => team.analytics.thiefWins) : null,
-      kickerWhisperer: kickerPool.length ? [...kickerPool].sort((a, b) => b.analytics.kickerPoints - a.analytics.kickerPoints || breakTie(a, b))[0] : null,
-      waiverTransactions: waiverPool.length ? [...waiverPool].sort((a, b) => b.analytics.waiverTransactions - a.analytics.waiverTransactions || breakTie(a, b))[0] : null,
-      dWhisperer: defensePool.length ? [...defensePool].sort((a, b) => b.analytics.defensePoints - a.analytics.defensePoints || breakTie(a, b))[0] : null
-    };
+    return Object.fromEntries(awards.map(award => [award.id, eligible.filter(award.qualifies)
+      .sort((a, b) => award.value(b) - award.value(a) || breakTie(a, b))]));
   }
-  function markup(teams, infoIcon = () => '') {
-    const result = winners(teams);
+  function winners(teams) {
+    const result = rankings(teams);
+    return result && Object.fromEntries(Object.entries(result).map(([id, list]) => [id, list[0] || null]));
+  }
+  function markup(teams, infoIcon = () => '', limit = 3) {
+    const result = rankings(teams);
     if (!result) return '<div class="chart-empty">Sync a Sleeper league to reveal the awards.</div>';
-    const plural = (value, word) => `${value} ${word}${value === 1 ? '' : word.endsWith('loss') ? 'es' : 's'}`;
-    const {juggernaut, heartbreak, escape, kickerWhisperer, waiverTransactions, dWhisperer} = result;
-    const awards = [
-      ['👑','Juggernaut','awardJuggernaut',juggernaut,plural(juggernaut.analytics.weeklyScores.filter(week => week.rank === 1).length,'weekly crown')],
-      ['💔','Heartbreak Kid','awardHeartbreak',heartbreak,heartbreak ? plural(heartbreak.analytics.badBeats,'above-median loss') : 'No above-median losses yet'],
-      ['🥷','Escape Artist','awardEscape',escape,escape ? plural(escape.analytics.thiefWins,'below-median win') : 'No below-median wins yet'],
-      ['🔄','Commitment Issues','awardWaiverTransactions',waiverTransactions,waiverTransactions ? plural(waiverTransactions.analytics.waiverTransactions,'completed transaction') : teams.every(team => Number.isFinite(team.analytics?.waiverTransactions)) ? 'No completed waiver, free-agent, or trade transactions yet' : 'Sync league to load transactions'],
-      ['🦵','Fantasy Futbol','awardKickerWhisperer',kickerWhisperer,kickerWhisperer ? `${kickerWhisperer.analytics.kickerPoints.toFixed(1)} started kicker points · ${plural(kickerWhisperer.analytics.kickerStarts,'start')}` : 'No kicker starts yet'],
-      ['🛡️','“D” Whisperer','awardDWhisperer',dWhisperer,dWhisperer ? `${dWhisperer.analytics.defensePoints.toFixed(1)} started D/ST points · ${plural(dWhisperer.analytics.defenseStarts,'start')}` : 'No D/ST starts yet']
-    ];
-    return awards.map(([icon, title, key, team, detail]) => `<article class="award-card"><div class="award-icon" aria-hidden="true">${icon}</div><div class="award-title"><span>${title}</span>${infoIcon(key)}</div><div class="award-team" title="${esc(team?.name || '')}">${team ? esc(team.name) : 'Not yet awarded'}</div><div class="award-detail">${detail}</div></article>`).join('');
+    const count = limit === 1 ? 1 : 3;
+    return awards.map(award => {
+      const list = result[award.id].slice(0, count);
+      const empty = award.id === 'waiverTransactions' && !teams.every(team => Number.isFinite(team.analytics?.waiverTransactions))
+        ? 'Sync league to load transactions' : award.empty;
+      const rows = list.map((team, index) => `<li class="award-row${index === 0 ? ' award-leader' : ''}"><span class="award-rank" aria-hidden="true">${String(index + 1).padStart(2,'0')}</span><div class="award-entry"><div class="award-team" title="${esc(team.name)}">${esc(team.name)}</div><div class="award-detail">${award.detail(team)}</div></div>${index === 0 ? '<span class="award-leader-label">Leader</span>' : ''}</li>`).join('');
+      return `<article class="award-card"><div class="award-card-head"><div class="award-icon" aria-hidden="true">${award.icon}</div><div class="award-title"><span>${award.title}</span>${infoIcon(award.key)}</div></div>${list.length ? `<ol class="award-list" aria-label="${esc(award.title)} top ${count}">${rows}</ol>` : `<div class="award-empty"><div class="award-team">Not yet awarded</div><div class="award-detail">${empty}</div></div>`}</article>`;
+    }).join('');
   }
   function applyTransactions(teams, transactions) {
     const counts = new Map(teams.map(team => [Number(team.sleeperRosterId), 0]));
@@ -55,7 +61,7 @@ const AwardsChart = (() => {
     }
     for (const team of teams) team.analytics.waiverTransactions = counts.get(Number(team.sleeperRosterId));
   }
-  function render(holder, teams, infoIcon) { holder.innerHTML = markup(teams, infoIcon); }
-  return {metricInfo, winners, markup, render, applyTransactions};
+  function render(holder, teams, infoIcon, limit = 3) { holder.innerHTML = markup(teams, infoIcon, limit); }
+  return {metricInfo, rankings, winners, markup, render, applyTransactions};
 })();
 if (typeof module !== 'undefined') module.exports = AwardsChart;

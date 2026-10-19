@@ -66,7 +66,18 @@ const metricInfo={
   largestBlowout:{title:'Largest blowout',body:'The completed matchup with the largest absolute scoring margin.',example:'The label shows whether the team won or lost and by how many points.'}
 };
 function openMetricInfo(key){const info=metricInfo[key];if(!info)return;$('#infoTitle').textContent=info.title;$('#infoBody').textContent=info.body;$('#infoExample').textContent=info.example;$('#infoDialog').showModal()}
-function renderAwards(){AwardsChart.render($('#awardsStrip'),teams,infoIcon)}
+let awardsExpanded=false;
+function renderAwards(){
+  const holder=$('#awardsStrip');
+  holder.classList.toggle('awards-expanded',awardsExpanded);
+  AwardsChart.render(holder,teams,infoIcon,awardsExpanded?3:1);
+}
+$('#awardsExpand').addEventListener('click',()=>{
+  awardsExpanded=!awardsExpanded;
+  $('#awardsExpand').setAttribute('aria-expanded',String(awardsExpanded));
+  $('#awardsExpand .awards-expand-label').textContent=awardsExpanded?'Hide top 3':'Show top 3';
+  renderAwards();
+});
 function renderScoringProfiles(){ScoringProfilesChart.render($('#scoringProfiles'),teams)}
 function renderScoringHeatmap(){ScoringHeatmapChart.render($('#scoringHeatmap'),teams)}
 function renderScheduleMatrix(){ScheduleMatrixChart.render($('#scheduleMatrix'),teams)}

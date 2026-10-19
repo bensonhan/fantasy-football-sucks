@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32-v2.png">
-  <link rel="stylesheet" href="styles.css?v=green-red-scales">
+  <link rel="stylesheet" href="styles.css?v=awards-chevron">
 </head>
 <body>
   <main class="shell">
@@ -59,8 +59,9 @@
       </aside>
     </section>
     <section class="awards-panel" id="awards" aria-labelledby="awards-title">
-      <div class="trend-head"><div><h2 id="awards-title">League awards</h2><p>The superlatives your group chat deserves.</p></div><div class="trend-note">Recalculated after every completed week</div></div>
-      <div class="awards-strip" id="awardsStrip"></div>
+      <div class="trend-head"><div><h2 id="awards-title">League awards</h2><p>The superlatives your group chat deserves.</p></div><div class="awards-controls"><button class="awards-expand" id="awardsExpand" type="button" aria-expanded="false" aria-controls="awardsStrip"><span class="awards-expand-label">Show top 3</span><svg class="awards-chevron" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16"><path d="m4 6 4 4 4-4"/></svg></button></div></div>
+      <div class="awards-strip" id="awardsStrip" aria-live="polite"></div>
+      <p class="awards-note">Qualifying teams only · Ties broken by season points, then roster ID · Updated with each league sync</p>
     </section>
     <section class="trend-panel" id="heatmap" aria-labelledby="heatmap-title">
       <div class="trend-head"><div><h2 id="heatmap-title">Weekly scoring heatmap</h2><p>Every score, graded against the league that week. <span class="heatmap-swipe-hint">Swipe to see all weeks →</span></p></div><div class="heatmap-legend" aria-label="Heatmap scale"><span>Low</span><i class="heat-1"></i><i class="heat-2"></i><i class="heat-3"></i><i class="heat-4"></i><i class="heat-5"></i><span>High</span></div></div>
@@ -101,7 +102,7 @@
   <div class="toast" id="toast" role="status"></div>
   <script src="regret.js?v=no-estimates"></script>
   <script src="charts/utils.js"></script>
-  <script src="charts/awards.js"></script>
+  <script src="charts/awards.js?v=awards-chevron"></script>
   <script src="charts/scoring-profiles.js?v=green-red-scales"></script>
   <script src="charts/scoring-heatmap.js?v=seventeen-week-heatmap"></script>
   <script src="charts/draft-board.js?v=draftboard-postmortem"></script>
